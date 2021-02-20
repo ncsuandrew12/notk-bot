@@ -72,6 +72,8 @@ async def startup(ctx):
   #   if role.name == cAmongUsRoleName:
   #     await role.delete(reason="cleanup")
 
+  roleMod = None
+  roleAmongUs = None
   for role in ctx.guild.roles:
     if role.name.startswith(cModRolePrefix):
       roleMod = role
@@ -153,13 +155,13 @@ Tag the `{}` role to ping all Among Us players like so: {}""".format(\
       roleAmongUs.mention))
 
   if amongUsRoleMessage == None:
-    info(ctx, 'Sending {} role message'.format(cAmongUsRoleName))
+    info(ctx, 'Sending {} instructional message'.format(cAmongUsRoleName))
     amongUsRoleMessage = await channelBot.send(content=amongUsRoleMessageText)
   
   if amongUsRoleMessage.pinned == True:
-    info(ctx, '{} role message already pinned.'.format(cAmongUsRoleName))
+    info(ctx, '{} instructional message already pinned.'.format(cAmongUsRoleName))
   else:
-    info(ctx, 'Pinning {} role message'.format(cAmongUsRoleName))
+    info(ctx, 'Pinning {} instructional message'.format(cAmongUsRoleName))
     await amongUsRoleMessage.pin(reason="The {} instructional message needs to be very visible to be useful".format(cBotChannelName))
 
   kBot = NotkBot(channelBot, roleAmongUs)
