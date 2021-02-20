@@ -22,13 +22,13 @@ fi
 latestVersion=`git tag --list | grep alpha | sed s'/alpha-//g' | sed -r 's/\.([0-9])$/.0\1/g' | sed -r 's/\.([0-9][0-9])$/.0\1/g' | sort | tail -1`
 latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
 latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
-latestMajor=$(sed -r 's/^0+//' <<< $latestMajor)
-latestMinor=$(sed -r 's/^0+//' <<< $latestMinor)
+latestMajor=$(sed -r 's/^0+([0-9])/\1/' <<< $latestMajor)
+latestMinor=$(sed -r 's/^0+([0-9])/\1/' <<< $latestMinor)
 
 major=$((latestMajor))
 minor=$((latestMinor+1))
 
-newVersion="${latestMajor}.${minor}"
+newVersion="${major}.${minor}"
 
 tagLabel="${newVersion}"
 
@@ -36,8 +36,8 @@ if [ $major -eq 0 ]; then
     tagLabel="alpha-$tagLabel"
 fi
 
+echo "Tagging release: $tagLabel"
 if [ $dryRun -eq 0 ]; then
-    echo "Tagging release: $tagLabel"
     git tag -a "$tagLabel" -m "Tagging $tagLabel"
 
     echo "Pushing tags."
