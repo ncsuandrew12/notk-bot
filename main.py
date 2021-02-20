@@ -222,7 +222,7 @@ I recommend muting the {} channel""".format(\
 async def au(ctx, cmd, *args):
   await startup(ctx)
 
-  await serverLog(ctx, "Processing `{}` command. Args: `{}`".format(cmd, "`, `".join(args)))
+  serverLog(ctx, "Processing `{}` command. Args: `{}`".format(cmd, "`, `".join(args)))
 
   members = []
   memberNames = []
