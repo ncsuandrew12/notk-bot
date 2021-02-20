@@ -2,29 +2,46 @@
 
 set -e
 
-if [[ `git status --short | wc -l` -ne 0 ]]; then
-    >&2 echo "ERROR: Uncommitted files."
+dryRun=0
+
+if [ "$1" == "--dry-run" ]; then
+    dryRun=1
+fi
+
+if [[ $dryRun -eq 0 && `git status --short | wc -l` -ne 0 ]]; then
+    >&2 echo "ERROR: Uncommitted files:"
+    git status
     exit 1
 fi;
 
-git push
+if [ $dryRun -eq 0 ]; then
+    echo "Pushing changes."
+    git push
+fi
 
 latestVersion=`git tag --list | grep alpha | sed s'/alpha-//g' | sed -r 's/\.([0-9])$/.0\1/g' | sed -r 's/\.([0-9][0-9])$/.0\1/g' | sort | tail -1`
 latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
 latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
+latestMajor=$(sed -r 's/^0+//' <<< $latestMajor)
+latestMinor=$(sed -r 's/^0+//' <<< $latestMinor)
 
+major=$((latestMajor))
 minor=$((latestMinor+1))
 
 newVersion="${latestMajor}.${minor}"
 
 tagLabel="${newVersion}"
 
-if [ $latestMajor -eq 0 ]; then
+if [ $major -eq 0 ]; then
     tagLabel="alpha-$tagLabel"
 fi
 
-git tag -a "$tagLabel" -m "Tagging $tagLabel"
+if [ $dryRun -eq 0 ]; then
+    echo "Tagging release: $tagLabel"
+    git tag -a "$tagLabel" -m "Tagging $tagLabel"
 
-git push --tags
+    echo "Pushing tags."
+    git push --tags
 
-./update_bot_host.bash
+    ./update_bot_host.bash
+fi
