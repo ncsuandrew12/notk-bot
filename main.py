@@ -220,7 +220,7 @@ Tag the `{}` role to ping all Among Us players like so: {}""".format(\
 async def au(ctx, cmd, *args):
   await startup(ctx)
 
-  await serverLog(ctx, guilds[ctx.guild.id], "Processing `{}` command. Args: `{}`".format(cmd, "`, `".join(args)))
+  await serverLog(ctx, "Processing `{}` command. Args: `{}`".format(cmd, "`, `".join(args)))
 
   members = []
   memberNames = []

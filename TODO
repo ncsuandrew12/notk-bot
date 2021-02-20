@@ -1,4 +1,6 @@
 -Update the status of the bot to show how many servers it is serving.
 -Come up with a better name for the bot.
 -Improve setup/start
+-Log startups (first time after reboot) in log channel
 -Move startup to class member function?
+-Restrict joining/leaving other players to mods
