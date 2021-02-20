@@ -1,0 +1,4 @@
+-Update the status of the bot to show how many servers it is serving.
+-Come up with a better name for the bot.
+-Improve setup/start
+-Move startup to class member function?
