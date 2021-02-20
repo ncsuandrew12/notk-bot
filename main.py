@@ -187,4 +187,11 @@ async def notifyAmongUsGame(channel, code):
 #  await channel.send(content="New game code: `{}`.".format(codeSpelled),\
 #                     tts=True)
 
-bot.run(os.getenv('TOKEN'))
+tokenFile = open('discord.token', 'r')
+
+try:
+  token = tokenFile.readline()
+finally:
+  tokenFile.close()
+
+bot.run(token)

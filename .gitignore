@@ -1,0 +1,4 @@
+.vscode
+
+*.token
+*.code-workspace
