@@ -1,6 +1,7 @@
 import discord
 import os
 import re
+import sys
 
 from discord.ext import commands
 
@@ -14,11 +15,6 @@ cCommandNewGame = "newgame"
 cBotChannelName = "notk-bot"
 cModRolePrefix = "mod"
 
-kAmongUsCodesChannel = False
-kAmongUsRole = False
-kBotChannel = False
-kModRole = False
-
 bot = commands.Bot(command_prefix='$')
 
 cCommandBase = "{}{}".format(bot.command_prefix, cCommandRoot)
@@ -27,50 +23,72 @@ cAmongUsJoinRequestMessageText = "{} {}".format(cCommandBase, cCommandJoin)
 cAmongUsLeaveRequestMessageText = "{} {}".format(cCommandBase, cCommandLeave)
 cAmongUsSendGameNotificationText = "Type `{} {} <room-code>` to send a new game notification.".format(cCommandBase, cCommandNewGame)
 
-@bot.command()
-async def au(ctx, cmd, *args):
-  await setup(ctx)
-  if cmd == cCommandJoin:
-    await addAmongUsPlayer(ctx, ctx.author.id)
-  elif cmd == cCommandLeave:
-    await removeAmongUsPlayer(ctx, ctx.author.id)
-  elif cmd == cCommandNewGame:
-    match = re.compile(r'^([A-Za-z]{6})$').search(args[0])
-    if bool(match):
-      await notifyAmongUsGame(ctx.message.channel, match.group(1).upper())
-    else:
-      print("ERROR: Bad room code given by {}.{}: `{}`. Must be six letters.".format(\
-        ctx.guild.name,\
-        ctx.author.name,\
-        args[0]))
-      await ctx.author.send("ERROR: Bad room code `{}`. Must be six letters.".format(args[0]))
+########################################################################################################################
+# Logging
+########################################################################################################################
 
-async def setup(ctx):
-  global kAmongUsCodesChannel
-  global kAmongUsRole
-  global kBotChannel
-  global kModRole
+def log(ctx, msg):
+  print("{}| {}.{}: {}".format(cBotChannelName.upper(), ctx.guild.name, ctx.author.name, msg))
 
-  if bool(kBotChannel):
+def info(ctx, msg):
+  log(ctx, "   INFO: {}".format(msg))
+
+async def warn(ctx, msg):
+  log(ctx, "WARNING: {}".format(msg))
+  await ctx.author.send(msg)
+
+async def err(ctx, msg):
+  msg =    "  ERROR: {}".format(msg)
+  log(ctx, msg)
+  await ctx.author.send(msg)
+  raise Exception(msg)
+
+########################################################################################################################
+# End Logging
+########################################################################################################################
+
+kBot = None
+
+########################################################################################################################
+# Startup, setup, and bot functions
+########################################################################################################################
+
+def boot():
+  tokenFile = open('discord.token', 'r')
+  try:
+    token = tokenFile.readline()
+  finally:
+    tokenFile.close()
+  bot.run(token)
+
+async def startup(ctx):
+  global kBot
+
+  if bool(kBot):
     return
 
-  print('Running setup on {}'.format(ctx.guild.name))
+  # TODO delete
+  # for role in ctx.guild.roles:
+  #   if role.name == cAmongUsRoleName:
+  #     await role.delete(reason="cleanup")
 
   for role in ctx.guild.roles:
     if role.name.startswith(cModRolePrefix):
-      kModRole = role
+      roleMod = role
     elif role.name == cAmongUsRoleName:
-      kAmongUsRole = role
+      roleAmongUs = role
     else:
       continue
-    print('Found role: {}'.format(role.name))
-  
-  if kModRole == False:
-    print("Warning: {} role not found.".format(cModRolePrefix))
+    info(ctx, 'Found role: {}'.format(role.name))
 
-  if kAmongUsRole == False:
-    print('Creating {} role'.format(cAmongUsRoleName))
-    await ctx.guild.create_role(\
+  info(ctx, "Setting up {}".format(ctx.guild.name))
+
+  if bool(roleMod) == False:
+    await warn(ctx, "{} role not found.".format(cModRolePrefix))
+
+  if bool(roleAmongUs) == False:
+    info(ctx, 'Creating {} role'.format(cAmongUsRoleName))
+    roleAmongUs = await ctx.guild.create_role(\
       name=cAmongUsRoleName,\
       mentionable=True,\
       hoist=False,\
@@ -82,41 +100,39 @@ async def setup(ctx):
 Type `{}` in any channel to be notified about NOTK Among Us game sessions.
 Type `{}` in any channel if you no longer want to be notified.
 {}
-Tag the `{}` role to ping all Among Us players like so: {}
-""".format(\
+Tag the `{}` role to ping all Among Us players like so: {}""".format(\
     cAmongUsJoinRequestMessageText,\
     cAmongUsLeaveRequestMessageText,\
     cAmongUsSendGameNotificationText,\
     cAmongUsRoleName,\
-    kAmongUsRole.mention)
+    roleAmongUs.mention)
 
+  channelBot = None
   for channel in ctx.guild.channels:
     if channel.name == cBotChannelName:
-      kBotChannel = channel
-    elif channel.name == cAmongUsCodesChannelName:
-      kAmongUsCodesChannel = channel
+      channelBot = channel
     else:
       continue
-    print('Found channel: {}'.format(channel.name))
+    info(ctx, 'Found channel: {}'.format(channel.name))
 
   # TODO delete
-#  if kBotChannel != False:
-#    await kBotChannel.delete(reason="pre-setup")
-#    kBotChannel = False
+  # if bool(channelBot):
+  #   await channelBot.delete(reason="pre-setup")
+  #   channelBot = None
 
-  amongUsRoleMessage = 0
-  if kBotChannel != False:
-    for message in await kBotChannel.history(limit=200).flatten():
-      if message.content == amongUsRoleMessageText:
-        print('Found {} instructional message in #{}'.format(ctx.user.name, kBotChannel.name))
+  amongUsRoleMessage = None
+  if bool(channelBot):
+    for message in await channelBot.history(limit=200).flatten():
+      if (message.content == amongUsRoleMessageText):
+        info(ctx, 'Found {} instructional message in #{}'.format(ctx.author.name, channelBot.name))
         amongUsRoleMessage = message
       elif message.content.startswith("⚠ notk-bot Instructions ⚠") & (message.author.id == bot.user.id):
-        print('Deleting old message by {} in #{}'.format(message.author.name, kBotChannel.name))
+        info(ctx, 'Deleting old message by {} in #{}'.format(message.author.name, channelBot.name))
         await message.delete()
       #else:
-        #print("Found message: {}".format(message.content))
+        #info(ctx, "Found message: {}".format(message.content))
   else:
-    print('Creating bot channel: {}'.format(cBotChannelName))
+    info(ctx, 'Creating bot channel: {}'.format(cBotChannelName))
     overwrites = {
       ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False),
       ctx.guild.me: discord.PermissionOverwrite(\
@@ -124,74 +140,101 @@ Tag the `{}` role to ping all Among Us players like so: {}
         read_messages=True,\
         send_messages=True)
     }
-    kBotChannel = await ctx.guild.create_text_channel(\
+    channelBot = await ctx.guild.create_text_channel(\
       name=cBotChannelName,\
       overwrites=overwrites,\
       topic="NOTK Bot",\
       reason="Need a place to put our message for users to react to")
 
-    await kBotChannel.send(content="{}{}{} has added support for the Among Us player group via the {} role.".format(\
-      kModRole.mention if kModRole != False else "",\
-      ", " if kModRole != False else "",\
+    await channelBot.send(content="{}{}{} has added support for the Among Us player group via the {} role.".format(\
+      roleMod.mention if bool(roleMod) else "",\
+      ", " if bool(roleMod) else "",\
       bot.user.mention,\
-      kAmongUsRole.mention))
-  
-  if amongUsRoleMessage == False:
-    print('Sending {} role message'.format(cAmongUsRoleName))
-    amongUsRoleMessage = await kBotChannel.send(content=amongUsRoleMessageText)
+      roleAmongUs.mention))
+
+  if amongUsRoleMessage == None:
+    info(ctx, 'Sending {} role message'.format(cAmongUsRoleName))
+    amongUsRoleMessage = await channelBot.send(content=amongUsRoleMessageText)
   
   if amongUsRoleMessage.pinned == True:
-    print('{} role message already pinned.'.format(cAmongUsRoleName))
+    info(ctx, '{} role message already pinned.'.format(cAmongUsRoleName))
   else:
-    print('Pinning {} role message'.format(cAmongUsRoleName))
+    info(ctx, 'Pinning {} role message'.format(cAmongUsRoleName))
     await amongUsRoleMessage.pin(reason="The {} instructional message needs to be very visible to be useful".format(cBotChannelName))
 
-async def addAmongUsPlayer(ctx, userid):
-  member = await ctx.guild.fetch_member(userid)
-  hasRole = False
-  for role in member.roles:
-    if role == kAmongUsRole:
-      print("@{} is already among the {} players".format(member.name, role.name))
-      await ctx.author.send("You are already among the {} players.".format(role.name))
-      hasRole = True
-  if hasRole == False:
-    print("Adding @{} to the {} players".format(member.name, kAmongUsRole.name))
-    await member.add_roles(\
-      kAmongUsRole,\
-      reason="{} requested to be pinged regarding Among Us games".format(member.name))
-    await kBotChannel.send(\
-      content="{} is now among the Among Us players! Type `{}` to leave the Among Us players.".format(\
-        member.mention,\
-        cAmongUsLeaveRequestMessageText))
+  kBot = NotkBot(channelBot, roleAmongUs)
 
-async def removeAmongUsPlayer(ctx, userid):
-  member = await ctx.guild.fetch_member(userid)
-  for role in member.roles:
-    if role == kAmongUsRole:
-      print("Removing @{} from the {} players".format(kAmongUsRole.name, member.name))
-      await member.remove_roles(\
-        kAmongUsRole,\
-        reason="@{} requested to no longer receive pings regarding Among Us games".format(member.name))
-      return
-  await ctx.author.send("You aren't among the {} players.".format(kAmongUsRole.name))
+########################################################################################################################
+# End Startup, setup, and bot functions
+########################################################################################################################
 
-async def notifyAmongUsGame(channel, code):
-  print("Notifying @{} of Among Us game code {} in channel {}".format(kAmongUsRole.name, code, channel.name))
-  await channel.send(\
-    content="Attention {}! New game code: `{}`. Type `{}` if you no longer want receive these notifications. {}".format(\
-      kAmongUsRole.mention,\
-      code,\
-      cAmongUsLeaveRequestMessageText,\
-      cAmongUsSendGameNotificationText))
-#  codeSpelled = re.sub(r"([A-Z])", r"\1 ", code)
-#  await channel.send(content="New game code: `{}`.".format(codeSpelled),\
-#                     tts=True)
+########################################################################################################################
+# Bot Commands
+########################################################################################################################
 
-tokenFile = open('discord.token', 'r')
+@bot.command()
+async def au(ctx, cmd, *args):
+  await startup(ctx)
+  if cmd == cCommandJoin:
+    await kBot.addAmongUsPlayer(ctx, ctx.author.id)
+  elif cmd == cCommandLeave:
+    await kBot.removeAmongUsPlayer(ctx, ctx.author.id)
+  elif cmd == cCommandNewGame:
+    await kBot.notifyAmongUsGame(ctx, ctx.message.channel, args[0])
+  else:
+    await err(ctx, "Invalid command `{}`.".format(cmd))
 
-try:
-  token = tokenFile.readline()
-finally:
-  tokenFile.close()
+class NotkBot:
+  def __init__(self, channelBot, roleAmongUs):
+    self.channelBot = channelBot
+    self.roleAmongUs = roleAmongUs
 
-bot.run(token)
+  async def addAmongUsPlayer(self, ctx, userid):
+    member = await ctx.guild.fetch_member(userid)
+    hasRole = None
+    for role in member.roles:
+      if role == self.roleAmongUs:
+        await warn(ctx, "{} is already among the {} players".format(member.name, role.name))
+        hasRole = True
+    if bool(hasRole) == False:
+      info(ctx, "Adding {} to the {} players".format(member.name, self.roleAmongUs.name))
+      await member.add_roles(\
+        self.roleAmongUs,\
+        reason="{} requested to be pinged regarding Among Us games".format(member.name))
+      await self.channelBot.send(\
+        content="{} is now among the Among Us players! Type `{}` to leave the Among Us players.".format(\
+          member.mention,\
+          cAmongUsLeaveRequestMessageText))
+
+  async def removeAmongUsPlayer(self, ctx, userid):
+    member = await ctx.guild.fetch_member(userid)
+    for role in member.roles:
+      if role == self.roleAmongUs:
+        info(ctx, "Removing {} from the {} players".format(self.roleAmongUs.name, member.name))
+        await member.remove_roles(\
+          self.roleAmongUs,\
+          reason="{} requested to no longer receive pings regarding Among Us games".format(member.name))
+        return
+    await warn(ctx, "{} isn't among the {} players".format(member.name, self.roleAmongUs.name))
+
+  async def notifyAmongUsGame(self, ctx, channel, code):
+    match = re.compile(r'^([A-Za-z]{6})$').search(code)
+    if bool(match) == False:
+      await err(ctx, "Bad room code `{}`. Must be six letters.".format(code))
+    code = code.upper()
+    info(ctx, "Notifying {} of Among Us game code {} in channel {}".format(self.roleAmongUs.name, code, channel.name))
+    await channel.send(\
+      content="Attention {}! New game code: `{}`. Type `{}` if you no longer want receive these notifications. {}".format(\
+        self.roleAmongUs.mention,\
+        code,\
+        cAmongUsLeaveRequestMessageText,\
+        cAmongUsSendGameNotificationText))
+  #  codeSpelled = re.sub(r"([A-Z])", r"\1 ", code)
+  #  await channel.send(content="New game code: `{}`.".format(codeSpelled),\
+  #                     tts=True)
+
+########################################################################################################################
+# End Bot Commands
+########################################################################################################################
+
+boot()
