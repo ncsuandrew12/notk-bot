@@ -38,7 +38,7 @@ guilds = {}
 # Logging
 ########################################################################################################################
 
-async def serverLog(ctx, msg):
+def serverLog(ctx, msg):
   print("{}| {}.{}: {}".format(kBotChannelName.upper(), ctx.guild.name, ctx.author.name, msg))
 
 async def log(ctx, guild, msg):
