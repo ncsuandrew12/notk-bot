@@ -122,18 +122,6 @@ async def startup(ctx):
       reason="Allow users to easily ping everyone interested in playing Among Us.")
       #colour=Colour.gold,\
 
-  amongUsRoleMessageText = \
-  """⚠ notk-bot Instructions ⚠
-Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
-Type `{}` in any public channel if you no longer want to be notified.
-{}
-Tag the `{}` role to ping all Among Us players like so: {}""".format(\
-    cAmongUsJoinRequestMessageText,\
-    cAmongUsLeaveRequestMessageText,\
-    cAmongUsSendGameNotificationText,\
-    kAmongUsRoleName,\
-    guilds[ctx.guild.id].roleAmongUs.mention)
-
   for channel in ctx.guild.channels:
     if channel.name == kBotChannelName:
       guilds[ctx.guild.id].channelBot = channel
@@ -147,6 +135,35 @@ Tag the `{}` role to ping all Among Us players like so: {}""".format(\
   # if bool(guilds[ctx.guild.id].channelBot):
   #   await guilds[ctx.guild.id].channelBot.delete(reason="pre-setup")
   #   guilds[ctx.guild.id].channelBot = None
+
+  if bool(guilds[ctx.guild.id].channelLog) == False:
+    await info(ctx, guilds[ctx.guild.id], 'Creating bot log channel: {}'.format(kLogChannelName))
+    overwrites = {
+      ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False),
+      ctx.guild.me: discord.PermissionOverwrite(\
+        manage_messages=True,\
+        read_messages=True,\
+        send_messages=True)
+    }
+    guilds[ctx.guild.id].channelLog = await ctx.guild.create_text_channel(\
+      name=kLogChannelName,\
+      overwrites=overwrites,\
+      topic="NOTK Bot Log",\
+      reason="Need a place to put logs")
+
+  amongUsRoleMessageText = \
+  """⚠ notk-bot Instructions ⚠
+Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
+Type `{}` in any public channel if you no longer want to be notified.
+{}
+Tag the `{}` role to ping all Among Us players like so: {}
+I recommend muting the {} channel""".format(\
+    cAmongUsJoinRequestMessageText,\
+    cAmongUsLeaveRequestMessageText,\
+    cAmongUsSendGameNotificationText,\
+    kAmongUsRoleName,\
+    guilds[ctx.guild.id].roleAmongUs.mention,
+    guilds[ctx.guild.id].channelLog.mention)
 
   amongUsRoleMessage = None
   if bool(guilds[ctx.guild.id].channelBot):
@@ -182,21 +199,6 @@ Tag the `{}` role to ping all Among Us players like so: {}""".format(\
       ", " if bool(roleMod) else "",\
       bot.user.mention,\
       guilds[ctx.guild.id].roleAmongUs.mention))
-
-  if bool(guilds[ctx.guild.id].channelLog) == False:
-    await info(ctx, guilds[ctx.guild.id], 'Creating bot log channel: {}'.format(kLogChannelName))
-    overwrites = {
-      ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False),
-      ctx.guild.me: discord.PermissionOverwrite(\
-        manage_messages=True,\
-        read_messages=True,\
-        send_messages=True)
-    }
-    guilds[ctx.guild.id].channelLog = await ctx.guild.create_text_channel(\
-      name=kLogChannelName,\
-      overwrites=overwrites,\
-      topic="NOTK Bot Log",\
-      reason="Need a place to put logs")
 
   if amongUsRoleMessage == None:
     await info(ctx, guilds[ctx.guild.id], 'Sending {} instructional message'.format(kAmongUsRoleName))
