@@ -23,6 +23,8 @@ cAmongUsJoinRequestMessageText = "{} {}".format(cCommandBase, cCommandJoin)
 cAmongUsLeaveRequestMessageText = "{} {}".format(cCommandBase, cCommandLeave)
 cAmongUsSendGameNotificationText = "Type `{} {} <room-code>` to send a new game notification.".format(cCommandBase, cCommandNewGame)
 
+kGuilds = {}
+
 ########################################################################################################################
 # Logging
 ########################################################################################################################
@@ -47,8 +49,6 @@ async def err(ctx, msg):
 # End Logging
 ########################################################################################################################
 
-kBot = None
-
 ########################################################################################################################
 # Startup, setup, and bot functions
 ########################################################################################################################
@@ -62,9 +62,9 @@ def boot():
   bot.run(token)
 
 async def startup(ctx):
-  global kBot
+  global kGuilds
 
-  if bool(kBot):
+  if ctx.guild.id in kGuilds:
     return
 
   # TODO delete
@@ -164,7 +164,7 @@ Tag the `{}` role to ping all Among Us players like so: {}""".format(\
     info(ctx, 'Pinning {} instructional message'.format(cAmongUsRoleName))
     await amongUsRoleMessage.pin(reason="The {} instructional message needs to be very visible to be useful".format(cBotChannelName))
 
-  kBot = NotkBot(channelBot, roleAmongUs)
+  kGuilds[ctx.guild.id] = NotkBot(channelBot, roleAmongUs)
 
 ########################################################################################################################
 # End Startup, setup, and bot functions
@@ -178,11 +178,11 @@ Tag the `{}` role to ping all Among Us players like so: {}""".format(\
 async def au(ctx, cmd, *args):
   await startup(ctx)
   if cmd == cCommandJoin:
-    await kBot.addAmongUsPlayer(ctx, ctx.author.id)
+    await kGuilds[ctx.guild.id].addAmongUsPlayer(ctx, ctx.author.id)
   elif cmd == cCommandLeave:
-    await kBot.removeAmongUsPlayer(ctx, ctx.author.id)
+    await kGuilds[ctx.guild.id].removeAmongUsPlayer(ctx, ctx.author.id)
   elif cmd == cCommandNewGame:
-    await kBot.notifyAmongUsGame(ctx, ctx.message.channel, args[0])
+    await kGuilds[ctx.guild.id].notifyAmongUsGame(ctx, ctx.message.channel, args[0])
   else:
     await err(ctx, "Invalid command `{}`.".format(cmd))
 
