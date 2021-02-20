@@ -92,8 +92,9 @@ async def startup(ctx):
 
   info(ctx, "Setting up {}".format(ctx.guild.name))
 
-  if bool(roleMod) == False:
-    await warn(ctx, "{} role not found.".format(cModRolePrefix))
+  # TODO Enable, but avoid sending messages to just whoever sent the command
+  # if bool(roleMod) == False:
+  #   await warn(ctx, "{} role not found.".format(cModRolePrefix))
 
   if bool(roleAmongUs) == False:
     info(ctx, 'Creating {} role'.format(cAmongUsRoleName))
@@ -193,12 +194,16 @@ async def au(ctx, cmd, *args):
     if len(args) > 0:
       fetchedMemberCount = 0
       while (fetchedMemberCount < ctx.guild.member_count) & (len(args) > len(members)):
-        for member in await ctx.guild.fetch_members(limit=100).flatten():
+        for member in await ctx.guild.fetch_members(limit=None).flatten():
+          # log(ctx, "Fetched {}".format(member.name))
           fetchedMemberCount += 1
           if member.name in args:
             members.append(member)
     else:
       members.append(await ctx.guild.fetch_member(ctx.author.id))
+    for name in args:
+      if (name in members) == False:
+        warn(ctx, "Could not find {} among {} members!", name, ctx.guild.name)
 
   if cmd == cCommandJoin:
     await guilds[ctx.guild.id].addAmongUsPlayer(ctx, members)
@@ -216,9 +221,8 @@ class NotkBot:
 
   async def addAmongUsPlayer(self, ctx, members):
     for member in members:
-      info(ctx, "amf add {}".format(member.name))
       if self.roleAmongUs in member.roles:
-        await warn(ctx, "{} is already among the {} players".format(member.name, role.name))
+        await warn(ctx, "{} is already among the {} players".format(member.name, self.roleAmongUs.name))
       else:
         info(ctx, "Adding {} to the {} players".format(member.name, self.roleAmongUs.name))
         await member.add_roles(\
@@ -236,7 +240,6 @@ class NotkBot:
 
   async def removeAmongUsPlayer(self, ctx, members):
     for member in members:
-      info(ctx, "amf remove {}".format(member.name))
       if self.roleAmongUs in member.roles:
         info(ctx, "Removing {} from the {} players".format(member.name, self.roleAmongUs.name))
         await member.remove_roles(\

@@ -1,4 +1,5 @@
 .vscode
+diff.diff
 
 *.token
 *.code-workspace
