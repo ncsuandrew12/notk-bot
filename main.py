@@ -274,9 +274,9 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
           if message.content == amongUsRoleMessageText:
             await self.info(ctx, 'Found `{}` instructional message in `#{}`'.format(message.author.name, self.channelBot.name))
             amongUsRoleMessage = message
-          elif message.content.startswith("⚠ notk-bot Instructions ⚠"):
-            await self.info(ctx, 'Deleting old message by `@{}` in `#{}`'.format(message.author.name, self.channelBot.name))
-            await message.delete()
+          # elif message.content.startswith("⚠ notk-bot Instructions ⚠"):
+            # await self.info(ctx, 'Deleting old message by `@{}` in `#{}`'.format(message.author.name, self.channelBot.name))
+            # await message.delete()
           #else:
             #info(ctx, guildBot, "Found message: {}".format(message.content))
         #else:

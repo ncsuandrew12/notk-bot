@@ -7,3 +7,4 @@
 -Move developer information to config file
 -When multiple users are added/removed, consolidate them into a single log/message
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
+-Fix instructional message update
