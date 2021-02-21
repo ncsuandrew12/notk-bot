@@ -9,6 +9,7 @@ User-comprehensible TODOs:
 -Request pizza from new members.
 -(one-off) Send pizza to notk's #general
 -Rename "among-us" role to "crewmates"?
+-Mention channels in more of the log messages (instead of simply naming them)
 
 Technical/development TODOs:
 -Improve setup/start
