@@ -19,22 +19,22 @@ if [ $dryRun -eq 0 ]; then
     git push
 fi
 
-latestVersion=`git tag --list | grep alpha | sed s'/alpha-//g' | sed -r 's/\.([0-9])$/.0\1/g' | sed -r 's/\.([0-9][0-9])$/.0\1/g' | sort | tail -1`
-latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
-latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
-latestMajor=$(sed -r 's/^0+([0-9])/\1/' <<< $latestMajor)
-latestMinor=$(sed -r 's/^0+([0-9])/\1/' <<< $latestMinor)
+major=0
+minor=1;
+if [ `git tag --list | wc -l` -gt 0 ]; then
+    latestVersion=`git tag --list | sed -r 's/\.([0-9])$/.0\1/g' | sed -r 's/\.([0-9][0-9])$/.0\1/g' | sort | tail -1`
+    latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
+    latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
+    latestMajor=$(sed -r 's/^0+([0-9])/\1/' <<< $latestMajor)
+    latestMinor=$(sed -r 's/^0+([0-9])/\1/' <<< $latestMinor)
 
-major=$((latestMajor))
-minor=$((latestMinor+1))
+    major=$((latestMajor))
+    minor=$((latestMinor+1))
+fi;
 
 newVersion="${major}.${minor}"
 
 tagLabel="${newVersion}"
-
-if [ $major -eq 0 ]; then
-    tagLabel="alpha-$tagLabel"
-fi
 
 echo "Tagging release: $tagLabel"
 if [ $dryRun -eq 0 ]; then
