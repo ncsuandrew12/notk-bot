@@ -12,8 +12,10 @@ User-comprehensible TODOs:
 
 Technical/development TODOs:
 -Improve setup/start
+-Move command processing into GuildBot class
 -Move developer information to config file
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Fix instructional message update
 --Update the instructional message by editing instead of replacing
 -Reorganize file structure.
+-Generalize RoleEnroller
