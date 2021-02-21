@@ -335,8 +335,8 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
             cAmongUsLeaveRequestMessageText,\
             ctx.guild.name))
     if (len(alreadyMemberNames) > 0):
-      await warn(self, ctx, "`{}` {} already among the `@{}` players".format(\
-        "`, `".join(alreadyMemberNames),\
+      await warn(self, ctx, "`@{}` {} already among the `@{}` players".format(\
+        "`, `@".join(alreadyMemberNames),\
         "is" if len(alreadyMemberNames) == 1 else "are",\
         self.roleAmongUs.name))
 
