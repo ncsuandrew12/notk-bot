@@ -105,16 +105,16 @@ async def startup(ctx):
       guilds[ctx.guild.id].roleAmongUs = role
     else:
       continue
-    await info(ctx, guilds[ctx.guild.id], 'Found role: {}'.format(role.name))
+    await info(ctx, guilds[ctx.guild.id], 'Found: `@{}`'.format(role.name))
 
-  await info(ctx, guilds[ctx.guild.id], "Setting up {}".format(ctx.guild.name))
+  await info(ctx, guilds[ctx.guild.id], "Setting up `{}`".format(ctx.guild.name))
 
   # TODO Enable, but avoid sending messages to just whoever sent the command
   # if bool(roleMod) == False:
   #   await warn(ctx, guilds[ctx.guild.id], "{} role not found.".format(cModRolePrefix))
 
   if bool(guilds[ctx.guild.id].roleAmongUs) == False:
-    await info(ctx, guilds[ctx.guild.id], 'Creating {} role'.format(kAmongUsRoleName))
+    await info(ctx, guilds[ctx.guild.id], 'Creating `@{}`'.format(kAmongUsRoleName))
     guilds[ctx.guild.id].roleAmongUs = await ctx.guild.create_role(\
       name=kAmongUsRoleName,\
       mentionable=True,\
@@ -129,7 +129,7 @@ async def startup(ctx):
       guilds[ctx.guild.id].channelLog = channel
     else:
       continue
-    await info(ctx, guilds[ctx.guild.id], 'Found channel: {}'.format(channel.name))
+    await info(ctx, guilds[ctx.guild.id], 'Found: `#{}`'.format(channel.name))
 
   # TODO delete
   # if bool(guilds[ctx.guild.id].channelBot):
@@ -137,7 +137,7 @@ async def startup(ctx):
   #   guilds[ctx.guild.id].channelBot = None
 
   if bool(guilds[ctx.guild.id].channelLog) == False:
-    await info(ctx, guilds[ctx.guild.id], 'Creating bot log channel: {}'.format(kLogChannelName))
+    await info(ctx, guilds[ctx.guild.id], 'Creating bot log: `#{}`'.format(kLogChannelName))
     overwrites = {
       ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False),
       ctx.guild.me: discord.PermissionOverwrite(\
@@ -157,7 +157,7 @@ Type `{}` in any public channel to be notified about NOTK Among Us game sessions
 Type `{}` in any public channel if you no longer want to be notified.
 {}
 Tag the `{}` role to ping all Among Us players like so: {}
-I recommend muting the {} channel""".format(\
+I recommend muting the {} channel; it is only for logging purposes and will be very noisy.""".format(\
     cAmongUsJoinRequestMessageText,\
     cAmongUsLeaveRequestMessageText,\
     cAmongUsSendGameNotificationText,\
@@ -170,17 +170,17 @@ I recommend muting the {} channel""".format(\
     for message in await guilds[ctx.guild.id].channelBot.history(limit=200).flatten():
       if message.author.id == bot.user.id:
         if message.content == amongUsRoleMessageText:
-          await info(ctx, guilds[ctx.guild.id], 'Found {} instructional message in #{}'.format(message.author.name, guilds[ctx.guild.id].channelBot.name))
+          await info(ctx, guilds[ctx.guild.id], 'Found `{}` instructional message in `#{}`'.format(message.author.name, guilds[ctx.guild.id].channelBot.name))
           amongUsRoleMessage = message
         elif message.content.startswith("⚠ notk-bot Instructions ⚠"):
-          await info(ctx, guilds[ctx.guild.id], 'Deleting old message by {} in #{}'.format(message.author.name, guilds[ctx.guild.id].channelBot.name))
+          await info(ctx, guilds[ctx.guild.id], 'Deleting old message by `@{}` in `#{}`'.format(message.author.name, guilds[ctx.guild.id].channelBot.name))
           await message.delete()
         #else:
           #info(ctx, guilds[ctx.guild.id], "Found message: {}".format(message.content))
       #else:
         #info(ctx, guilds[ctx.guild.id], "Found message: {}".format(message.content))
   else:
-    await info(ctx, guilds[ctx.guild.id], 'Creating bot channel: {}'.format(kBotChannelName))
+    await info(ctx, guilds[ctx.guild.id], 'Creating bot channel: `#{}`'.format(kBotChannelName))
     overwrites = {
       ctx.guild.default_role: discord.PermissionOverwrite(send_messages=False),
       ctx.guild.me: discord.PermissionOverwrite(\
@@ -194,21 +194,21 @@ I recommend muting the {} channel""".format(\
       topic="NOTK Bot",\
       reason="Need a place to put our instructional message and send join/leave notifications")
 
-    await guilds[ctx.guild.id].channelBot.send(content="{}{}{} has added support for the Among Us player group via the {} role.".format(\
+    await guilds[ctx.guild.id].channelBot.send(content="{}{}{} has added support for the Among Us player group via the `@{}` role.".format(\
       roleMod.mention if bool(roleMod) else "",\
       ", " if bool(roleMod) else "",\
       bot.user.mention,\
       guilds[ctx.guild.id].roleAmongUs.mention))
 
   if amongUsRoleMessage == None:
-    await info(ctx, guilds[ctx.guild.id], 'Sending {} instructional message'.format(kAmongUsRoleName))
+    await info(ctx, guilds[ctx.guild.id], 'Sending `{}` instructional message'.format(kAmongUsRoleName))
     amongUsRoleMessage = await guilds[ctx.guild.id].channelBot.send(content=amongUsRoleMessageText)
   
   if amongUsRoleMessage.pinned == True:
-    await info(ctx, guilds[ctx.guild.id], '{} instructional message already pinned.'.format(kAmongUsRoleName))
+    await info(ctx, guilds[ctx.guild.id], '`{}` instructional message already pinned.'.format(kAmongUsRoleName))
   else:
     await info(ctx, guilds[ctx.guild.id], 'Pinning {} instructional message'.format(kAmongUsRoleName))
-    await amongUsRoleMessage.pin(reason="The {} instructional message needs to be very visible to be useful".format(kBotChannelName))
+    await amongUsRoleMessage.pin(reason="The `{}` instructional message needs to be very visible to be useful".format(kBotChannelName))
 
 ########################################################################################################################
 # End Startup, setup, and bot functions
@@ -243,9 +243,9 @@ async def au(ctx, cmd, *args):
         try:
           member = await ctx.guild.fetch_member(userID)
         except Exception as e:
-          await warn(ctx, guilds[ctx.guild.id], "userID {}: {}".format(userID, str(e)))
+          await warn(ctx, guilds[ctx.guild.id], "userID `{}`: {}".format(userID, str(e)))
         except:
-          await warn(ctx, guilds[ctx.guild.id], "userID {}: {}".format(userID, str(sys.exc_info()[0])))
+          await warn(ctx, guilds[ctx.guild.id], "userID `{}`: {}".format(userID, str(sys.exc_info()[0])))
         else:
           if member.name not in memberNames:
             resolved.append(userIDs[userID])
@@ -293,7 +293,7 @@ class NotkBotGuild:
       if self.roleAmongUs in member.roles:
         alreadyMemberNames.append(member.name)
       else:
-        await info(ctx, self, "Adding {} to the {} players".format(member.name, self.roleAmongUs.name))
+        await info(ctx, self, "Adding `@{}` to the `@{}` players".format(member.name, self.roleAmongUs.name))
         await member.add_roles(\
           self.roleAmongUs,\
           reason="{} requested for {} to be pinged regarding Among Us games".format(\
@@ -304,13 +304,13 @@ class NotkBotGuild:
             self.roleAmongUs.mention,\
             member.mention))
         await member.send(\
-          content="You have been added to {}'s Among Us players. Type `{}` in any public channel in {} to leave the Among Us players.".format(\
+          content="You have been added to {}'s Among Us players. Type `{}` in any public channel in `{}` to leave the Among Us players.".format(\
             ctx.guild.name,\
             cAmongUsLeaveRequestMessageText,\
             ctx.guild.name))
     if (len(alreadyMemberNames) > 0):
-      await warn(ctx, self, "{} {} already among the {} players".format(\
-        ", ".join(alreadyMemberNames),\
+      await warn(ctx, self, "`{}` {} already among the `@{}` players".format(\
+        "`, `".join(alreadyMemberNames),\
         "is" if len(alreadyMemberNames) == 1 else "are",\
         self.roleAmongUs.name))
 
@@ -318,7 +318,7 @@ class NotkBotGuild:
     missingMemberNames = []
     for member in members:
       if self.roleAmongUs in member.roles:
-        await info(ctx, self, "Removing {} from the {} players".format(member.name, self.roleAmongUs.name))
+        await info(ctx, self, "Removing `@{}` from the `{}` players".format(member.name, self.roleAmongUs.name))
         await member.remove_roles(\
           self.roleAmongUs,\
           reason="{} requested for {} to no longer receive pings regarding Among Us games".format(\
@@ -337,7 +337,7 @@ class NotkBotGuild:
     if bool(match) == False:
       await err(ctx, self, "Bad room code `{}`. Must be six letters.".format(code))
     code = code.upper()
-    await info(ctx, self, "Notifying {} of Among Us game code {} in channel {}".format(self.roleAmongUs.name, code, channel.name))
+    await info(ctx, self, "Notifying `@{}` of Among Us game code `{}` in `#{}`".format(self.roleAmongUs.name, code, channel.name))
     await channel.send(\
       content="Attention {}! New game code: `{}`. Type `{}` if you no longer want receive these notifications. {}".format(\
         self.roleAmongUs.mention,\
