@@ -8,6 +8,7 @@ User-comprehensible TODOs:
 -Prompt new members to join the Among Us role.
 -Request pizza from new members.
 -(one-off) Send pizza to notk's #general
+-Rename "among-us" role to "crewmates"?
 
 Technical/development TODOs:
 -Improve setup/start
@@ -15,6 +16,4 @@ Technical/development TODOs:
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Fix instructional message update
 --Update the instructional message by editing instead of replacing
--Enable multiple versions to run on the same server (so test and production can run simultaneously without paying for another server)
---Alternatively, get set up to run test version from my PC/home server
 -Reorganize file structure.
