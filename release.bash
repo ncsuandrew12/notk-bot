@@ -43,5 +43,5 @@ if [ $dryRun -eq 0 ]; then
     echo "Pushing tags."
     git push --tags
 
-    ./update_bot_host.bash
+    ./deployToProduction.bash
 fi
