@@ -149,8 +149,8 @@ async def au(ctx, cmd, *args):
           psuedoName = member.name.replace(" ", "")
           if member.name in userNames:
             psuedoName = member.name
-          if psuedoName in userNames &\
-             member.name not in memberNames:
+          if bool(psuedoName in userNames) &\
+             bool(member.name not in memberNames):
             resolved.append(psuedoName)
             members.append(member)
             memberNames.append(member.name)
