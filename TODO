@@ -7,6 +7,7 @@ User-comprehensible TODOs:
 -When multiple users add themselves within the same timespan (e.g. 5 minutes), send only a single message to reduce notifications
 -Prompt new members to join the Among Us role.
 -Request pizza from new members.
+-(one-off) Send pizza to notk's #general
 
 Technical/development TODOs:
 -Improve setup/start
@@ -16,3 +17,4 @@ Technical/development TODOs:
 --Update the instructional message by editing instead of replacing
 -Enable multiple versions to run on the same server (so test and production can run simultaneously without paying for another server)
 --Alternatively, get set up to run test version from my PC/home server
+-Reorganize file structure.
