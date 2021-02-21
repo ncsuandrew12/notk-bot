@@ -41,19 +41,25 @@ guildBots = {}
 # Logging
 ########################################################################################################################
 
-def serverLog(ctx, msg):
-  print("{}| {}.{}: {}".format(cBotName.upper(), ctx.guild.name, ctx.author.name, msg))
+def serverLog(msg):
+  print("{}| {}".format(cBotName.upper(), msg))
+
+def serverLogCtx(ctx, msg):
+  serverLog("{}.{}: {}".format(ctx.guild.name, ctx.author.name, msg))
 
 async def log(guildBot, ctx, msg):
-  serverLog(ctx, msg)
+  serverLogCtx(ctx, msg)
   if bool(guildBot.channelLog):
     await guildBot.channelLog.send(content="{}".format("{}: {}".format(ctx.author.name, msg)))
 
-async def info(guildBot, ctx, msg):
-  await log(guildBot, ctx, "INFO: {}".format(msg))
+async def logErr(guildBot, ctx, msg):
+  await logSevere(guildBot, ctx, "ERROR:   {}".format(msg))
 
-async def sevLog(guildBot, ctx, msg):
-  serverLog(ctx, msg)
+async def logWarn(guildBot, ctx, msg):
+  await logSevere(guildBot, ctx, "WARNING: {}".format(msg))
+
+async def logSevere(guildBot, ctx, msg):
+  serverLogCtx(ctx, msg)
   if bool(guildBot.channelLog):
     await guildBot.channelLog.send(\
       content="{}: {}".format(\
@@ -62,16 +68,37 @@ async def sevLog(guildBot, ctx, msg):
   else:
     await ctx.author.send(msg)
 
-async def warn(guildBot, ctx, msg):
-  await sevLog(guildBot, ctx, "WARNING: {}".format(msg))
+async def logInfo(guildBot, ctx, msg):
+  await log(guildBot, ctx, "INFO:    {}".format(msg))
 
-async def err(guildBot, ctx, msg):
-  msg = "ERROR: {}".format(msg)
-  await sevLog(guildBot, ctx, msg)
-  raise Exception(msg)
+def logDebug(msg):
+  serverLog("DEBUG:   {}".format(msg))
+
+def logDebugCtx(ctx, msg):
+  serverLogCtx(ctx, "DEBUG:   {}".format(msg))
 
 ########################################################################################################################
 # End Logging
+########################################################################################################################
+
+########################################################################################################################
+# Error
+########################################################################################################################
+
+class MinorException(Exception):
+  def __init__(self, msg):
+    Exception.__init__(self, msg)
+
+async def err(guildBot, ctx, msg):
+  await logErr(guildBot, ctx, msg)
+  raise Exception(msg)
+
+async def errMinor(guildBot, ctx, msg):
+  await logErr(guildBot, ctx, msg)
+  raise MinorException(msg)
+
+########################################################################################################################
+# End Error
 ########################################################################################################################
 
 ########################################################################################################################
@@ -94,6 +121,8 @@ def boot():
 async def on_ready():
   global guildBots
 
+  logDebug("Starting {} bots".format(len(bot.guilds)))
+
   for guild in bot.guilds:
     if guild.id in guildBots:
       continue
@@ -102,74 +131,83 @@ async def on_ready():
     await guildBot.setup(guild)
     guildBots[guild.id] = guildBot
 
+  logDebug("{} bots running".format(len(guildBots)))
+
 @bot.command()
 async def au(ctx, cmd, *args):
   global guildBots
 
-  if ctx.guild.id not in guildBots:
-    await err(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
-      ctx.guild.name,
-      "andrewf#6219"))
+  try:
+    if ctx.guild.id not in guildBots:
+      await err(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
+        ctx.guild.name,
+        "andrewf#6219"))
 
-  guildBot = guildBots[ctx.guild.id]
-  serverLog(ctx, "Processing `{}` command. Args: `{}`".format(cmd, "`, `".join(args)))
+    guildBot = guildBots[ctx.guild.id]
+    logDebugCtx(ctx, "Processing `{}` command. Args: `{}`".format(cmd, "`, `".join(args)))
 
-  members = []
-  memberNames = []
-  resolved = []
-  if cmd in [ cCommandJoin, cCommandLeave]:
-    if len(args) > 0:
-      userIDs = {}
-      userNames = []
-      for arg in args:
-        if arg.startswith('<@') & arg.endswith('>'):
-          userID = arg[2:-1];
-          if userID.startswith('!'):
-            userID = userID[1:len(userID)];
-          userIDs[userID] = arg
-        else:
-          userNames.append(arg)
-      for userID in userIDs:
-        try:
-          member = await ctx.guild.fetch_member(userID)
-        except Exception as e:
-          await warn(guildBot, ctx, "userID `{}`: {}".format(userID, str(e)))
-        except:
-          await warn(guildBot, ctx, "userID `{}`: {}".format(userID, str(sys.exc_info()[0])))
-        else:
-          if member.name not in memberNames:
-            resolved.append(userIDs[userID])
-            members.append(member)
-            memberNames.append(member.name)
-      fetchedMemberCount = 0
-      while (fetchedMemberCount < ctx.guild.member_count) & (len(userNames) > len(members)):
-        for member in await ctx.guild.fetch_members(limit=None).flatten():
-          # await info(guildBot, ctx, "Fetched {}".format(member.name))
-          fetchedMemberCount += 1
-          psuedoName = member.name.replace(" ", "")
-          if member.name in userNames:
-            psuedoName = member.name
-          if bool(psuedoName in userNames) &\
-             bool(member.name not in memberNames):
-            resolved.append(psuedoName)
-            members.append(member)
-            memberNames.append(member.name)
+    members = []
+    memberNames = []
+    resolved = []
+    if cmd in [ cCommandJoin, cCommandLeave]:
+      if len(args) > 0:
+        userIDs = {}
+        userNames = []
+        for arg in args:
+          if arg.startswith('<@') & arg.endswith('>'):
+            userID = arg[2:-1];
+            if userID.startswith('!'):
+              userID = userID[1:len(userID)];
+            userIDs[userID] = arg
+          else:
+            userNames.append(arg)
+        for userID in userIDs:
+          try:
+            member = await ctx.guild.fetch_member(userID)
+          except Exception as e:
+            await logWarn(guildBot, ctx, "userID `{}`: {}".format(userID, str(e)))
+          except:
+            await logWarn(guildBot, ctx, "userID `{}`: {}".format(userID, str(sys.exc_info()[0])))
+          else:
+            if member.name not in memberNames:
+              resolved.append(userIDs[userID])
+              members.append(member)
+              memberNames.append(member.name)
+        fetchedMemberCount = 0
+        while (fetchedMemberCount < ctx.guild.member_count) & (len(userNames) > len(members)):
+          for member in await ctx.guild.fetch_members(limit=None).flatten():
+            # await logInfo(guildBot, ctx, "Fetched {}".format(member.name))
+            fetchedMemberCount += 1
+            psuedoName = member.name.replace(" ", "")
+            if member.name in userNames:
+              psuedoName = member.name
+            if bool(psuedoName in userNames) &\
+              bool(member.name not in memberNames):
+              resolved.append(psuedoName)
+              members.append(member)
+              memberNames.append(member.name)
+      else:
+        member = await ctx.guild.fetch_member(ctx.author.id)
+        members = [member]
+        memberNames = [member.name]
+      missing = set(args) - set(resolved)
+      if (len(missing) > 0):
+        await logWarn(guildBot, ctx, "Could not find `{}` members: `{}`!".format(ctx.guild.name, "`, `".join(missing)))
+
+    if cmd == cCommandJoin:
+      await guildBot.addAmongUsPlayer(ctx, members)
+    elif cmd == cCommandLeave:
+      await guildBot.removeAmongUsPlayer(ctx, members)
+    elif cmd == cCommandNewGame:
+      await guildBot.notifyAmongUsGame(ctx, ctx.message.channel, args[0])
     else:
-      member = await ctx.guild.fetch_member(ctx.author.id)
-      members = [member]
-      memberNames = [member.name]
-    missing = set(args) - set(resolved)
-    if (len(missing) > 0):
-      await warn(guildBot, ctx, "Could not find `{}` members: `{}`!".format(ctx.guild.name, "`, `".join(missing)))
-
-  if cmd == cCommandJoin:
-    await guildBot.addAmongUsPlayer(ctx, members)
-  elif cmd == cCommandLeave:
-    await guildBot.removeAmongUsPlayer(ctx, members)
-  elif cmd == cCommandNewGame:
-    await guildBot.notifyAmongUsGame(ctx, ctx.message.channel, args[0])
-  else:
-    await err(guildBot, ctx, "Invalid command `{}`.".format(cmd))
+      await err(guildBot, ctx, "Invalid command `{}`.".format(cmd))
+  except MinorException as e:
+    # This error will have already been logged
+    # TODO better way to noop?
+    someVar = None
+  except:
+    raise
 
 ########################################################################################################################
 # End Bot
@@ -189,7 +227,7 @@ class GuildBot:
 
     ctx = ContextStubbed(guild, AuthorStubbed(guild.name))
 
-    serverLog(ctx, "Starting bot (before channel located)")
+    logDebugCtx(ctx, "Starting bot (before channel located)")
 
     for channel in guild.channels:
       if channel.name == cBotChannelName:
@@ -198,7 +236,7 @@ class GuildBot:
         self.channelLog = channel
       else:
         continue
-      serverLog(ctx, 'Found: `#{}`'.format(channel.name))
+      logDebugCtx(ctx, 'Found: `#{}`'.format(channel.name))
 
     # TODO delete
     # if bool(self.channelBot):
@@ -206,7 +244,7 @@ class GuildBot:
     #   guildBot.channelBot = None
 
     if bool(self.channelLog) == False:
-      serverLog(ctx, 'Creating bot log: `#{}`'.format(cLogChannelName))
+      logDebugCtx(ctx, 'Creating bot log: `#{}`'.format(cLogChannelName))
       overwrites = {
         guild.default_role: discord.PermissionOverwrite(send_messages=False),
         guild.me: discord.PermissionOverwrite(\
@@ -220,7 +258,7 @@ class GuildBot:
         topic="NOTK Bot Log",\
         reason="Need a place to put logs")
 
-    await self.info(ctx, "Starting bot")
+    await self.logInfo(ctx, "Starting bot")
 
     # TODO delete
     # for role in ctx.guild.roles:
@@ -236,14 +274,14 @@ class GuildBot:
         self.roleAmongUs = role
       else:
         continue
-      await self.info(ctx, 'Found: `@{}`'.format(role.name))
+      await self.logInfo(ctx, 'Found: `@{}`'.format(role.name))
 
     # TODO Enable, but avoid sending messages to just whoever sent the command
     # if bool(roleMod) == False:
-    #   await warn(self, "{} role not found.".format(cRoleModPrefix))
+    #   await logWarn(self, "{} role not found.".format(cRoleModPrefix))
 
     if bool(self.roleAmongUs) == False:
-      await self.info(ctx, 'Creating `@{}`'.format(cAmongUsRoleName))
+      await self.logInfo(ctx, 'Creating `@{}`'.format(cAmongUsRoleName))
       self.roleAmongUs = await guild.create_role(\
         name=cAmongUsRoleName,\
         mentionable=True,\
@@ -270,17 +308,17 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       for message in await self.channelBot.history(limit=200).flatten():
         if message.author.id == bot.user.id:
           if message.content == amongUsRoleMessageText:
-            await self.info(ctx, 'Found `{}` instructional message in `#{}`'.format(message.author.name, self.channelBot.name))
+            await self.logInfo(ctx, 'Found `{}` instructional message in `#{}`'.format(message.author.name, self.channelBot.name))
             amongUsRoleMessage = message
           # elif message.content.startswith("⚠ notk-bot Instructions ⚠"):
-            # await self.info(ctx, 'Deleting old message by `@{}` in `#{}`'.format(message.author.name, self.channelBot.name))
+            # await self.logInfo(ctx, 'Deleting old message by `@{}` in `#{}`'.format(message.author.name, self.channelBot.name))
             # await message.delete()
           #else:
-            #info(ctx, guildBot, "Found message: {}".format(message.content))
+            #logInfo(ctx, guildBot, "Found message: {}".format(message.content))
         #else:
-          #info(ctx, guildBot, "Found message: {}".format(message.content))
+          #logInfo(ctx, guildBot, "Found message: {}".format(message.content))
     else:
-      await self.info(ctx, 'Creating bot channel: `#{}`'.format(cBotChannelName))
+      await self.logInfo(ctx, 'Creating bot channel: `#{}`'.format(cBotChannelName))
       overwrites = {
         guild.default_role: discord.PermissionOverwrite(send_messages=False),
         guild.me: discord.PermissionOverwrite(\
@@ -301,16 +339,16 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         self.roleAmongUs.mention))
 
     if amongUsRoleMessage == None:
-      await self.info(ctx, 'Sending `{}` instructional message'.format(cAmongUsRoleName))
+      await self.logInfo(ctx, 'Sending `{}` instructional message'.format(cAmongUsRoleName))
       amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
     
     if amongUsRoleMessage.pinned == True:
-      await self.info(ctx, '`{}` instructional message already pinned.'.format(cAmongUsRoleName))
+      await self.logInfo(ctx, '`{}` instructional message already pinned.'.format(cAmongUsRoleName))
     else:
-      await self.info(ctx, 'Pinning {} instructional message'.format(cAmongUsRoleName))
+      await self.logInfo(ctx, 'Pinning {} instructional message'.format(cAmongUsRoleName))
       await amongUsRoleMessage.pin(reason="The `{}` instructional message needs to be very visible to be useful".format(cBotName))
 
-    await self.info(ctx, "Bot started.")
+    await self.logInfo(ctx, "Bot started.")
 
   async def addAmongUsPlayer(self, ctx, members):
     alreadyMemberNames = []
@@ -318,7 +356,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       if self.roleAmongUs in member.roles:
         alreadyMemberNames.append(member.name)
       else:
-        await self.info(ctx, "Adding `@{}` to the `@{}` players".format(member.name, self.roleAmongUs.name))
+        await self.logInfo(ctx, "Adding `@{}` to the `@{}` players".format(member.name, self.roleAmongUs.name))
         await member.add_roles(\
           self.roleAmongUs,\
           reason="{} requested for {} to be pinged regarding Among Us games".format(\
@@ -335,7 +373,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
             cAmongUsLeaveRequestMessageText,\
             ctx.guild.name))
     if (len(alreadyMemberNames) > 0):
-      await warn(self, ctx, "`@{}` {} already among the `@{}` players".format(\
+      await logWarn(self, ctx, "`@{}` {} already among the `@{}` players".format(\
         "`, `@".join(alreadyMemberNames),\
         "is" if len(alreadyMemberNames) == 1 else "are",\
         self.roleAmongUs.name))
@@ -344,7 +382,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     missingMemberNames = []
     for member in members:
       if self.roleAmongUs in member.roles:
-        await self.info(ctx, "Removing `@{}` from the `{}` players".format(member.name, self.roleAmongUs.name))
+        await self.logInfo(ctx, "Removing `@{}` from the `{}` players".format(member.name, self.roleAmongUs.name))
         await member.remove_roles(\
           self.roleAmongUs,\
           reason="{} requested for {} to no longer receive pings regarding Among Us games".format(\
@@ -355,16 +393,16 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       else:
         missingMemberNames.append(member.name)
     if (len(missingMemberNames) > 0):
-      await self.warn(ctx, "{} isn't among the {} players".format(\
+      await self.logWarn(ctx, "{} isn't among the {} players".format(\
         ", ".join(missingMemberNames),\
         self.roleAmongUs.name))
 
   async def notifyAmongUsGame(self, ctx, channel, code):
     match = re.compile(r'^([A-Za-z]{6})$').search(code)
     if bool(match) == False:
-      await self.err(ctx, "Bad room code `{}`. Must be six letters.".format(code))
+      await self.errMinor(ctx, "Bad room code `{}`. Must be six letters.".format(code))
     code = code.upper()
-    await self.info(ctx, "Notifying `@{}` of Among Us game code `{}` in `#{}`".format(self.roleAmongUs.name, code, channel.name))
+    await self.logInfo(ctx, "Notifying `@{}` of Among Us game code `{}` in `#{}`".format(self.roleAmongUs.name, code, channel.name))
     await channel.send(\
       content="Attention {}! New game code: `{}`. Type `{}` if you no longer want receive these notifications. {}".format(\
         self.roleAmongUs.mention,\
@@ -375,14 +413,17 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
   #  await channel.send(content="New game code: `{}`.".format(codeSpelled),\
   #                     tts=True)
 
-  async def info(self, ctx, msg):
-    await info(self, ctx, msg)
+  async def logInfo(self, ctx, msg):
+    await logInfo(self, ctx, msg)
 
-  async def warn(self, ctx, msg):
-    await warn(self, ctx, msg)
+  async def logWarn(self, ctx, msg):
+    await logWarn(self, ctx, msg)
 
   async def err(self, ctx, msg):
     await err(self, ctx, msg)
+
+  async def errMinor(self, ctx, msg):
+    await errMinor(self, ctx, msg)
 
 ########################################################################################################################
 # End GuildBot
