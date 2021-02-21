@@ -238,8 +238,6 @@ class GuildBot:
         continue
       await self.info(ctx, 'Found: `@{}`'.format(role.name))
 
-    await self.info(ctx, "Setting up `{}`".format(guild.name))
-
     # TODO Enable, but avoid sending messages to just whoever sent the command
     # if bool(roleMod) == False:
     #   await warn(self, "{} role not found.".format(cRoleModPrefix))
