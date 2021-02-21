@@ -1,10 +1,18 @@
+User-comprehensible TODOs:
 -Update the status of the bot to show how many servers it is serving.
 -Come up with a better name for the bot.
--Improve setup/start
--Log startups (first time after reboot) in log channel
--Move startup to class member function?
 -Restrict joining/leaving other players to mods
+--Require a setup command before the bot becomes active? e.g. to specify which role is the "mod" role?
+-When multiple users are added/removed in a single command, consolidate them into a single log/message to reduce notifications
+-When multiple users add themselves within the same timespan (e.g. 5 minutes), send only a single message to reduce notifications
+-Prompt new members to join the Among Us role.
+-Request pizza from new members.
+
+Technical/development TODOs:
+-Improve setup/start
 -Move developer information to config file
--When multiple users are added/removed, consolidate them into a single log/message
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Fix instructional message update
+--Update the instructional message by editing instead of replacing
+-Enable multiple versions to run on the same server (so test and production can run simultaneously without paying for another server)
+--Alternatively, get set up to run test version from my PC/home server
