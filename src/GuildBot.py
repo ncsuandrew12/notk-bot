@@ -1,7 +1,6 @@
 # Modules
-# import discord
+import discord
 # import inspect
-# import json
 # import os
 import re
 # import sys
@@ -46,7 +45,7 @@ class GuildBot:
     #   await self.channelBot.delete(reason="pre-setup")
     #   guildBot.channelBot = None
 
-    if bool(self.channelLog) == False:
+    if not self.channelLog:
       dlog.debug(ctx, 'Creating bot log: `#{}`'.format(cfg.cLogChannelName))
       overwrites = {
         guild.default_role: discord.PermissionOverwrite(send_messages=False),
@@ -80,10 +79,10 @@ class GuildBot:
       await self.info(ctx, 'Found: `@{}`'.format(role.name))
 
     # TODO Enable, but avoid sending messages to just whoever sent the command
-    # if bool(roleMod) == False:
+    # if not roleMod:
     #   await dlog.warn(self, "{} role not found.".format(cfg.cRoleModPrefix))
 
-    if bool(self.roleAmongUs) == False:
+    if not self.roleAmongUs:
       await self.info(ctx, 'Creating `@{}`'.format(cfg.cAmongUsRoleName))
       self.roleAmongUs = await guild.create_role(\
         name=cfg.cAmongUsRoleName,\
@@ -108,13 +107,22 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
 
     amongUsRoleMessage = None
     if bool(self.channelBot):
+      # FIXME Limit
       for message in await self.channelBot.history(limit=200).flatten():
         if message.author.id == self.user.id:
           if message.content == amongUsRoleMessageText:
-            await self.info(ctx, 'Found `{}` instructional message in `#{}`'.format(message.author.name, self.channelBot.name))
+            await self.info(ctx, 'Found up-to-date {} instructional message in {}: {}'.format(\
+              message.author.mention,\
+              self.channelBot.mention,\
+              message.jump_url))
             amongUsRoleMessage = message
-          # elif message.content.startswith("⚠ notk-bot Instructions ⚠"):
-            # await self.info(ctx, 'Deleting old message by `@{}` in `#{}`'.format(message.author.name, self.channelBot.name))
+          elif message.content.startswith("⚠ notk-bot Instructions ⚠"):
+            await self.info(ctx, 'Updating old {} instructional message in {}: {}'.format(\
+              message.author.mention,\
+              self.channelBot.mention,\
+              message.jump_url))
+            await message.edit(content=amongUsRoleMessageText)
+            amongUsRoleMessage = message
             # await message.delete()
           #else:
             #dlog.info(ctx, guildBot, "Found message: {}".format(message.content))
@@ -135,7 +143,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         topic="NOTK Bot",\
         reason="Need a place to put our instructional message and send join/leave notifications")
 
-      await self.channelBot.send(content="{}{}{} has added support for the Among Us player group via the `@{}` role.".format(\
+      await self.channelBot.send(content="{}{}{} has added support for the Among Us player group via the {} role.".format(\
         roleMod.mention if bool(roleMod) else "",\
         ", " if bool(roleMod) else "",\
         self.user.mention,\
@@ -145,7 +153,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       await self.info(ctx, 'Sending `{}` instructional message'.format(cfg.cAmongUsRoleName))
       amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
     
-    if amongUsRoleMessage.pinned == True:
+    if amongUsRoleMessage.pinned:
       await self.info(ctx, '`{}` instructional message already pinned.'.format(cfg.cAmongUsRoleName))
     else:
       await self.info(ctx, 'Pinning {} instructional message'.format(cfg.cAmongUsRoleName))
@@ -203,7 +211,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
 
   async def notifyAmongUsGame(self, ctx, channel, code):
     match = re.compile(r'^([A-Za-z]{6})$').search(code)
-    if bool(match) == False:
+    if not match:
       await self.errMinor(ctx, "Bad room code `{}`. Must be six letters.".format(code))
     code = code.upper()
     await self.info(ctx, "Notifying `@{}` of Among Us game code `{}` in `#{}`".format(self.roleAmongUs.name, code, channel.name))
