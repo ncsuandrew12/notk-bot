@@ -8,7 +8,7 @@ if [ "$1" == "--dry-run" ]; then
     dryRun=1
 fi
 
-if [[ $dryRun -eq 0 && `git status --short | wc -l` -ne 0 ]]; then
+if [[ `git status --short | wc -l` -ne 0 ]]; then
     >&2 echo "ERROR: Uncommitted files:"
     git status
     exit 1
@@ -38,11 +38,13 @@ tagLabel="${newVersion}"
 
 read -p "Release $tagLabel? [y/N]: " doRelease
 doRelease=$(tr '[:upper:]' '[:lower:]' <<< $doRelease)
-if [ $dryRun -eq 0 ] & [[ "$doRelease" == "y" ]]; then
+if [[ "$doRelease" != "y" ]]; then
+    >&2 echo "Release cancelled!"
+    exit 2
+fi
+if [ $dryRun -eq 0 ]; then
     git tag -a "$tagLabel" -m "Tagging $tagLabel"
 
     echo "Pushing tags."
     git push --tags
-
-    ./deployToProduction.bash
 fi
