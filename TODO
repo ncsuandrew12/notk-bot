@@ -10,8 +10,10 @@ User-comprehensible TODOs:
 -(one-off) Send pizza to notk's #general
 -Rename "among-us" role to "crewmates"?
 -Mention channels in more of the log messages (instead of simply naming them)
+-Point new users to the rules
 
 Technical/development TODOs:
+-Automated tests
 -Improve setup/start
 -Move command processing into GuildBot class
 -Move developer information to config file
