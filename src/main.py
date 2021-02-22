@@ -403,7 +403,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     missingMemberNames = []
     for member in members:
       if self.roleAmongUs in member.roles:
-        await self.dLogInfo(ctx, "Removing `@{}` from the `{}` players".format(member.name, self.roleAmongUs.name))
+        await self.dLogInfo(ctx, "Removing `@{}` from the `@{}` players".format(member.name, self.roleAmongUs.name))
         await member.remove_roles(\
           self.roleAmongUs,\
           reason="{} requested for {} to no longer receive pings regarding Among Us games".format(\
@@ -415,8 +415,8 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       else:
         missingMemberNames.append(member.name)
     if (len(missingMemberNames) > 0):
-      await self.dLogWarn(ctx, "{} isn't among the {} players".format(\
-        ", ".join(missingMemberNames),\
+      await self.dLogWarn(ctx, "`@{}` isn't among the `@{}` players".format(\
+        "`, `@".join(missingMemberNames),\
         self.roleAmongUs.name))
 
   async def notifyAmongUsGame(self, ctx, channel, code):
