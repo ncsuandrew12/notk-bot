@@ -18,5 +18,5 @@ Technical/development TODOs:
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Fix instructional message update
 --Update the instructional message by editing instead of replacing
--Reorganize file structure.
 -Generalize RoleEnroller
+-Move lists of deployment files from scripts to dedicated file list files

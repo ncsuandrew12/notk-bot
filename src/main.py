@@ -23,7 +23,7 @@ cCommandNewGame = "newgame"
 cRoleModPrefix = "mod"
 cRoleModSubstring = "moderator"
 
-with open('config.json') as file:
+with open('cfg/config.json') as file:
   kConfig = json.load(file)
 
 cUniversalSuffix = kConfig["universalSuffix"]
@@ -93,7 +93,7 @@ async def dLogSevere(guildBot, ctx, msg):
       content="{}: {}".format(\
         ctx.author.mention if bool(ctx.author.mention) else ctx.author.name,\
         msg))
-  else:
+  elif not ctx.author.bot:
     await ctx.author.send(msg)
 
 async def dLogInfo(guildBot, ctx, msg):
@@ -127,7 +127,7 @@ async def dErrMinor(guildBot, ctx, msg):
 ########################################################################################################################
 
 def boot():
-  tokenFilePath = 'discord.token'
+  tokenFilePath = 'cfg/discord.token'
   if os.path.exists(tokenFilePath):
     tokenFile = open(tokenFilePath, 'r')
     try:
@@ -387,12 +387,12 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
           content="Hey {} players! {} is now among the Among Us players!".format(\
             self.roleAmongUs.mention,\
             member.mention))
-        # TODO skip this if the recipient is the bot (i.e. it's trying to message itself)
-        await member.send(\
-          content="You have been added to `{}`'s Among Us players. Type `{}` in any public channel in `{}` to leave the Among Us players.".format(\
-            ctx.guild.name,\
-            cAmongUsLeaveRequestMessageText,\
-            ctx.guild.name))
+        if not member.bot:
+          await member.send(\
+            content="You have been added to `{}`'s Among Us players. Type `{}` in any public channel in `{}` to leave the Among Us players.".format(\
+              ctx.guild.name,\
+              cAmongUsLeaveRequestMessageText,\
+              ctx.guild.name))
     if (len(alreadyMemberNames) > 0):
       await dLogWarn(self, ctx, "`@{}` {} already among the `@{}` players".format(\
         "`, `@".join(alreadyMemberNames),\
@@ -410,7 +410,8 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
             ctx.author.name,\
             member.name))
         await self.channelBot.send(content="{} is now Among The Hidden.".format(member.mention))
-        await member.send(content="You have been remove from `{}`'s Among Us players.".format(ctx.guild.name))
+        if not member.bot:
+          await member.send(content="You have been remove from `{}`'s Among Us players.".format(ctx.guild.name))
       else:
         missingMemberNames.append(member.name)
     if (len(missingMemberNames) > 0):

@@ -2,6 +2,11 @@
 
 set -e
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source "${DIR}/common.bash"
+
+cd "${ROOT_DIR}"
+
 dryRun=0
 
 if [ "$1" == "--dry-run" ]; then
