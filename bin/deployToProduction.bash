@@ -14,7 +14,7 @@ fi
 
 echo "Deploying to production"
 
-cp -vf ${ROOT_DIR}/src/main.py ${TARGET}/
+cp -vf ${ROOT_DIR}/src/*.py ${TARGET}/
 
 mkdir -p ${TARGET}/cfg/
 cp -rvf ${ROOT_DIR}/cfg/production/* ${TARGET}/cfg/

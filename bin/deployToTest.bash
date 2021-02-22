@@ -7,7 +7,7 @@ TARGET="/test/notk-bot"
 
 echo "Deploying to test"
 
-cp -vf ${ROOT_DIR}/src/main.py ${TARGET}/
+cp -vf ${ROOT_DIR}/src/*.py ${TARGET}/
 
 mkdir -p ${TARGET}/cfg/
 cp -rvf ${ROOT_DIR}/cfg/test/* ${TARGET}/cfg/
