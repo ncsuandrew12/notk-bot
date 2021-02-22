@@ -161,7 +161,54 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
 
     await self.info(ctx, "Bot started.")
 
-  async def addAmongUsPlayer(self, ctx, members):
+  async def Command(self, ctx, cmd, *args):
+    dlog.debug(ctx, "Processing command: `{} {}`".format(cmd, " ".join(args)))
+
+    members = []
+    memberNames = []
+    resolved = []
+    if cmd in [ cfg.cCommandJoin, cfg.cCommandLeave]:
+      if len(args) > 0:
+        userIDs = {}
+        userNames = []
+        for arg in args:
+          if arg.startswith('<@') & arg.endswith('>'):
+            userID = arg[2:-1]
+            while userID.startswith('!') | userID.startswith('&'):
+              userID = userID[1:len(userID)]
+            userIDs[userID] = arg
+          else:
+            userNames.append(arg)
+        for userID in userIDs:
+          try:
+            member = await ctx.guild.fetch_member(userID)
+          except Exception as e:
+            dlog.serverWarn(ctx, "userID `{}`: {}".format(userID, str(e)))
+          except:
+            dlog.serverWarn(ctx, "userID `{}`: {}".format(userID, str(sys.exc_info()[0])))
+          else:
+            if member.name not in memberNames:
+              resolved.append(userIDs[userID])
+              members.append(member)
+              memberNames.append(member.name)
+      else:
+        member = await ctx.guild.fetch_member(ctx.author.id)
+        members = [member]
+        memberNames = [member.name]
+      missing = set(args) - set(resolved)
+      if (len(missing) > 0):
+        await dlog.warn(self, ctx, "Could not find `{}` members: `{}`!".format(ctx.guild.name, "`, `".join(missing)))
+
+    if cmd == cfg.cCommandJoin:
+      await self.AddAmongUsPlayer(ctx, members)
+    elif cmd == cfg.cCommandLeave:
+      await self.RemoveAmongUsPlayer(ctx, members)
+    elif cmd == cfg.cCommandNewGame:
+      await self.NotifyAmongUsGame(ctx, ctx.message.channel, args[0])
+    else:
+      await Error.dErr(self, ctx, "Invalid command `{}`.".format(cmd))
+
+  async def AddAmongUsPlayer(self, ctx, members):
     alreadyMemberNames = []
     for member in members:
       if self.roleAmongUs in member.roles:
@@ -189,7 +236,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         "is" if len(alreadyMemberNames) == 1 else "are",\
         self.roleAmongUs.name))
 
-  async def removeAmongUsPlayer(self, ctx, members):
+  async def RemoveAmongUsPlayer(self, ctx, members):
     missingMemberNames = []
     for member in members:
       if self.roleAmongUs in member.roles:
@@ -209,7 +256,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         "`, `@".join(missingMemberNames),\
         self.roleAmongUs.name))
 
-  async def notifyAmongUsGame(self, ctx, channel, code):
+  async def NotifyAmongUsGame(self, ctx, channel, code):
     match = re.compile(r'^([A-Za-z]{6})$').search(code)
     if not match:
       await self.errMinor(ctx, "Bad room code `{}`. Must be six letters.".format(code))
