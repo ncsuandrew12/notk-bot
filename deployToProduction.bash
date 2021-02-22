@@ -14,3 +14,5 @@ echo "Deploying to production"
 cp -vf main.py "${TARGET}/"
 cp -vf discord.token "${TARGET}/"
 cp -vf config.json "${TARGET}/"
+
+echo "Deployed to production!"

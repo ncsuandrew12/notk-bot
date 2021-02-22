@@ -1,10 +1,15 @@
 import discord
+import inspect
 import json
 import os
 import re
 import sys
 
 from discord.ext import commands
+
+# Get function name
+#import inspect
+# inspect.currentframe().f_code.co_name
 
 # Needed to be able to list members (for mapping member name arguments to actual members)
 kIntents = discord.Intents.default()
@@ -171,9 +176,9 @@ async def au(ctx, cmd, *args):
         userNames = []
         for arg in args:
           if arg.startswith('<@') & arg.endswith('>'):
-            userID = arg[2:-1];
-            if userID.startswith('!'):
-              userID = userID[1:len(userID)];
+            userID = arg[2:-1]
+            while userID.startswith('!') | userID.startswith('&'):
+              userID = userID[1:len(userID)]
             userIDs[userID] = arg
           else:
             userNames.append(arg)

@@ -36,8 +36,9 @@ newVersion="${major}.${minor}"
 
 tagLabel="${newVersion}"
 
-echo "Tagging release: $tagLabel"
-if [ $dryRun -eq 0 ]; then
+read -p "Release $tagLabel? [y/N]: " doRelease
+doRelease=$(tr '[:upper:]' '[:lower:]' <<< $doRelease)
+if [ $dryRun -eq 0 ] & [[ "$doRelease" == "y" ]]; then
     git tag -a "$tagLabel" -m "Tagging $tagLabel"
 
     echo "Pushing tags."
