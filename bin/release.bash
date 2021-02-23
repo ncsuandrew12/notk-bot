@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -8,12 +9,18 @@ source "${DIR}/common.bash"
 cd "${ROOT_DIR}"
 
 dryRun=0
+majorRelease=0
 
 if [ "$1" == "--dry-run" ]; then
     dryRun=1
 fi
 
-majorRelease=0
+if [ "$1" == "--major-release" ]; then
+    majorRelease=1
+fi
+if [ "$2" == "--major-release" ]; then
+    majorRelease=1
+fi
 
 if [[ `git status --short | wc -l` -ne 0 ]]; then
     >&2 echo "ERROR: Uncommitted files:"
@@ -55,9 +62,10 @@ newVersion="${major}.${minor}"
 
 tagLabel="${newVersion}"
 
-read -p "Release $tagLabel? [y/N]: " doRelease
+read -p "Release $tagLabel? [y/N]: " -n 1 doRelease
+echo
 doRelease=$(tr '[:upper:]' '[:lower:]' <<< $doRelease)
-if [[ "$doRelease" != "y" ]]; then
+if [[ ! $doRelease =~ ^[Yy]$ ]]; then
     >&2 echo "Release cancelled!"
     exit 2
 fi
