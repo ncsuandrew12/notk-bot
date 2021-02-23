@@ -8,10 +8,11 @@ class Config:
     self.cCommandJoin = "join"
     self.cCommandLeave = "leave"
     self.cCommandNewGame = "newgame"
-    self.cRoleModPrefix = "mod"
-    self.cRoleModSubstring = "moderator"
     self.cExternalChanges = "EXTERNAL CHANGES"
     self.cInstructionalLine = "⚠ notk-bot Instructions ⚠"
+    self.cReleaseNotes = "Release Notes:"
+    self.cRoleModPrefix = "mod"
+    self.cRoleModSubstring = "moderator"
 
     cCommandRoot = "au" # Must match the @bot.commmand() function name
 

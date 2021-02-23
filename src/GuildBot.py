@@ -55,14 +55,14 @@ class GuildBot:
           releaseNotesSection = match.group(1)
           releaseNotes[releaseNotesSection] = ""
         elif rawLine:
-          if (len(line)) & (len(releaseNotes[releaseNotesSection])):
-            releaseNotes[releaseNotesSection] += "\n"
-          releaseNotes[releaseNotesSection] += line
+          releaseNotes[releaseNotesSection] += rawLine
     except Exception as e:
       dlog.serverError(ctx, "Could not read release notes from file: '{}'".format(releaseNotesPath))
       raise
     finally:
       releaseNotesFile.close()
+    for key in releaseNotes:
+      releaseNotes[releaseNotesSection].strip()
     dlog.serverInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
 
     # Check for existing channels
@@ -105,20 +105,24 @@ class GuildBot:
     #     await role.delete(reason="cleanup")
 
     # Check for existing roles
+    modNames = []
     for role in guild.roles:
-      if bool(roleMod) &\
-         (role.name.lower().startswith(cfg.cRoleModPrefix.lower()) |\
-          (cfg.cRoleModSubstring.lower() in role.name.lower())):
+      modNames.append(role.name)
+      if (role.name.lower() == cfg.cRoleModPrefix.lower()) |\
+         ((not roleMod) &\
+          (role.name.lower().startswith(cfg.cRoleModPrefix.lower()) |\
+           (cfg.cRoleModSubstring.lower() in role.name.lower()))):
         roleMod = role
-      elif role.name == cfg.cAmongUsRoleName:
+      elif role.name.lower() == cfg.cAmongUsRoleName.lower():
         self.roleAmongUs = role
       else:
         continue
       # DO NOT mention the role. We don't need to tag all the players in this log message, lol.
       await self.info(ctx, 'Found: `@{}`'.format(role.name))
+    dlog.serverInfo(ctx, 'Roles: `{}`'.format('`, `@'.join(modNames)))
 
     if not roleMod:
-      await dlog.serverWarn(ctx, "{} role not found.".format(cfg.cRoleModPrefix))
+      dlog.serverWarn(ctx, "{} role not found.".format(cfg.cRoleModPrefix))
 
     # Create the role
     if not self.roleAmongUs:
@@ -131,28 +135,27 @@ class GuildBot:
         #colour=Colour.gold,\
 
     # Check the existing pinned messages and parse data from them
-    oldVersionStr = "0.0"
     amongUsRoleMessage = None
     releaseNotesMessage = None
     if self.channelBot:
       # FIXME Parse all history until we find the instructional message
       for message in await self.channelBot.history(limit=1000).flatten():
         if message.author.id == self.bot.user.id:
+          # dlog.serverInfo(ctx, 'Found message in {}: [{}]'.format(\
+          #   self.channelBot.mention,\
+          #   message.content))
           if cfg.cInstructionalLine in message.content.partition('\n')[0]:
             amongUsRoleMessage = message
             dlog.serverInfo(ctx, 'Found {} instructional message in {}: {}'.format(\
               message.author.mention,\
               self.channelBot.mention,\
               message.jump_url))
-          elif message.content.startswith("\nRelease Notes:"):
+          elif message.content.startswith(cfg.cReleaseNotes):
             releaseNotesMessage = message
             dlog.serverInfo(ctx, 'Found {} release notes message in {}: {}'.format(\
               message.author.mention,\
               self.channelBot.mention,\
               message.jump_url))
-            match = re.search(r'Version ([0-9]+\.[0-9]+):', message.content)
-            if match:
-              oldVersionStr = match.group(1)
 
     # Create main bot channel
     if not self.channelBot:
@@ -177,10 +180,41 @@ class GuildBot:
           self.bot.user.mention,\
           self.roleAmongUs.mention))
 
-    # Handle release notes pinned message
-    releaseNotesMessageText = ""
+    releaseNotesLatestSection = ""
     if releaseNotes[cfg.cExternalChanges]:
-      releaseNotesMessageText += "Release notes:\n\nVersion {}:\n{}".format(versionStr, releaseNotes[cfg.cExternalChanges])
+      releaseNotesLatestSection = "Version {}:\n{}".format(\
+        versionStr,\
+        releaseNotes[cfg.cExternalChanges])
+    releaseNotesLatestSection
+
+    # Handle release notes pinned message
+    oldVersionStr = None
+    releaseNotesSections = []
+    index = -1
+    if releaseNotesMessage:
+      for line in releaseNotesMessage.content.splitlines():
+        match = re.search(r'^Version ([0-9]+\.[0-9]+):$', line)
+        if match:
+          if not oldVersionStr:
+            oldVersionStr = match.group(1)
+          releaseNotesSections.append(line + "\n")
+          index += 1
+        elif index >= 0:
+          releaseNotesSections[index] += line + "\n"
+    if not oldVersionStr:
+      oldVersionStr = "0.0"
+    print("[{}, {}]\n[{}]".format(versionStr, oldVersionStr, releaseNotesSections))
+
+    if len(releaseNotesSections):
+      if versionStr == oldVersionStr:
+        releaseNotesSections[0] = releaseNotesLatestSection
+      else:
+        releaseNotesSections.insert(0, releaseNotesLatestSection)
+    else:
+      releaseNotesSections = [ releaseNotesLatestSection ]
+    print("[{}]".format(releaseNotesSections))
+    releaseNotesMessageText = "{}\n\n{}".format(cfg.cReleaseNotes, "".join(releaseNotesSections))
+
     if not releaseNotesMessage:
       await self.info(ctx, 'Sending `@{}` release notes message'.format(cfg.cAmongUsRoleName))
       releaseNotesMessage = await self.channelBot.send(content=releaseNotesMessageText)
@@ -191,19 +225,16 @@ class GuildBot:
         self.channelBot.mention,\
         releaseNotesMessage.jump_url))
     else:
-      # FUTURE include all past release notes in the message (in descending order)
       await self.info(ctx, 'Updating old {} release notes message in {}: {}'.format(\
         releaseNotesMessage.author.mention,\
         self.channelBot.mention,\
         releaseNotesMessage.jump_url))
-      await releaseNotesMessage.edit(content=releaseNotesText)
-      if (versionStr != oldVersionStr) &\
-         releaseNotes[cfg.cExternalChanges]:
-        await self.channelBot.send(content="{}{} has been updated!\nVersion {} Release Notes:\n{}\n".format(\
+      await releaseNotesMessage.edit(content=releaseNotesMessageText)
+      if (versionStr != oldVersionStr):
+        await self.channelBot.send(content="{}{} has been updated!\n{}".format(\
           roleMod.mention + ", " if roleMod else "",\
           self.bot.user.mention,\
-          versionStr,\
-          releaseNotes[cfg.cExternalChanges]))
+          releaseNotesSections[0]))
     if releaseNotesMessage.pinned:
       await self.info(ctx, '`@{}` release notes message already pinned.'.format(cfg.cAmongUsRoleName))
     else:
