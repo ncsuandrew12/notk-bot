@@ -203,7 +203,6 @@ class GuildBot:
           releaseNotesSections[index] += line + "\n"
     if not oldVersionStr:
       oldVersionStr = "0.0"
-    print("[{}, {}]\n[{}]".format(versionStr, oldVersionStr, releaseNotesSections))
 
     if len(releaseNotesSections):
       if versionStr == oldVersionStr:
@@ -212,7 +211,6 @@ class GuildBot:
         releaseNotesSections.insert(0, releaseNotesLatestSection)
     else:
       releaseNotesSections = [ releaseNotesLatestSection ]
-    print("[{}]".format(releaseNotesSections))
     releaseNotesMessageText = "{}\n\n{}".format(cfg.cReleaseNotes, "".join(releaseNotesSections))
 
     if not releaseNotesMessage:
