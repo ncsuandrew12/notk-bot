@@ -1,39 +1,39 @@
 # Modules
 import discord
-# import re
-# import sys
+import inspect
 
 # notk-bot
 import Error
 import Logging as log
 
-from Config import cfg
 from GuildBot import GuildBot
 from Exceptions import MinorException
 from Exceptions import NotkException
 
-class NotkBot:
+class GuildBotManager:
   def __init__(self, bot, token):
     self.bot = bot
     self.token = token
 
   def Run(self):
-    log.debug("Starting root bot")
+    log.info("Starting {}".format(__name__))
     self.guildBots = {}
     self.bot.run(self.token)
+    log.info("Exiting {}".format(__name__))
 
   async def OnReady(self):
-    log.debug("Starting {} bots".format(len(self.bot.guilds)))
+    log.debug("Starting {} {}".format(len(self.bot.guilds), GuildBot.__name__))
 
+    # TODO start the separate guild bots asynchronously
     for guild in self.bot.guilds:
       if guild.id in self.guildBots:
         continue
 
-      guildBot = GuildBot()
-      await guildBot.setup(self.bot.user, guild)
+      guildBot = GuildBot(self.bot)
+      await guildBot.setup(guild)
       self.guildBots[guild.id] = guildBot
 
-    log.debug("{} bots running".format(len(self.guildBots)))
+    log.debug("{} guild bots running".format(len(self.guildBots)))
 
   async def Command(self, ctx, cmd, *args):
     try:

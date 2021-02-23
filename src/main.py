@@ -6,7 +6,7 @@ from discord.ext import commands
 
 # notk-bot
 from Config import cfg
-from NotkBot import NotkBot
+from GuildBotManager import GuildBotManager
 import Logging as log
 
 # Get function name
@@ -32,7 +32,7 @@ else:
 
 bot = commands.Bot(command_prefix=cfg.cCommandPrefix, intents=kIntents)
 
-notkBot = NotkBot(bot, token)
+notkBot = GuildBotManager(bot, token)
 
 @bot.event
 async def on_ready():

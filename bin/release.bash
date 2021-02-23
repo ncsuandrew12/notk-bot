@@ -70,8 +70,11 @@ if [ $dryRun -eq 0 ]; then
     mkdir -p releases/${tagLabel}
 
     echo "Moving release notes."
-    cp release_notes Release_Notes.md
-    mv release_notes releases/${tagLabel}/Release_Notes.md
+    cp release_notes RELEASE_NOTES.md
+    mv release_notes releases/${tagLabel}/RELEASE_NOTES.md
+
+    echo "Documenting version."
+    echo ${tagLabel} > VERSION
 
     echo "Committing changes."
     git add releases/${tagLabel}
