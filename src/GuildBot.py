@@ -26,6 +26,43 @@ class GuildBot:
 
     dlog.debug(ctx, "Starting {} (before channel located)".format(__name__))
 
+    versionStr=""
+    versionPath = 'VERSION'
+    versionFile = open(versionPath, 'r')
+    try:
+      versionStr = versionFile.readline().strip()
+      if len(versionStr) < 3: # M.m
+        await err(ctx, "Could not read version information from file: '{}'".format(versionPath))
+    except:
+      dlog.serverError(ctx, "Could not read version information from file: '{}'".format(versionPath))
+      raise
+    finally:
+      versionFile.close()
+    dlog.serverInfo(ctx, "Version: {}".format(versionStr))
+
+    releaseNotes = {}
+    releaseNotesPath = 'RELEASE_NOTES'
+    releaseNotesFile = open(releaseNotesPath, 'r')
+    try:
+      rawLine = "none"
+      while rawLine:
+        rawLine = releaseNotesFile.readline()
+        line = rawLine.strip()
+        match = re.search(r'^([A-Z ]+)$', line)
+        if match:
+          releaseNotesSection = match.group(1)
+          releaseNotes[releaseNotesSection] = ""
+        elif rawLine:
+          if (len(line)) & (len(releaseNotes[releaseNotesSection])):
+            releaseNotes[releaseNotesSection] += "\n"
+          releaseNotes[releaseNotesSection] += line
+    except Exception as e:
+      dlog.serverError(ctx, "Could not read release notes from file: '{}'".format(releaseNotesPath))
+      raise
+    finally:
+      releaseNotesFile.close()
+    dlog.serverInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
+
     for channel in guild.channels:
       if channel.name == cfg.cBotChannelName:
         self.channelBot = channel
@@ -64,9 +101,9 @@ class GuildBot:
     #     await role.delete(reason="cleanup")
 
     for role in guild.roles:
-      if bool(roleMod) & \
+      if bool(roleMod) &\
          (role.name.lower().startswith(cfg.cRoleModPrefix.lower()) |\
-          bool(cfg.cRoleModSubstring.lower() in role.name.lower())):
+          (cfg.cRoleModSubstring.lower() in role.name.lower())):
         roleMod = role
       elif role.name == cfg.cAmongUsRoleName:
         self.roleAmongUs = role
@@ -88,68 +125,28 @@ class GuildBot:
         reason="Allow users to easily ping everyone interested in playing Among Us.")
         #colour=Colour.gold,\
 
-    versionStr=""
-    versionPath = 'VERSION'
-    versionFile = open(versionPath, 'r')
-    try:
-      versionStr = versionFile.readline()
-      if len(versionStr) < 3: # M.m
-        await self.err(ctx, "Could not read version information from file: '{}'".format(versionPath))
-    except:
-      await self.err(ctx, "Could not read release notes from file: '{}'".format(versionPath))
-    finally:
-      versionFile.close()
-
-    amongUsRoleMessage = None
     oldVersionStr = "0.0"
+    amongUsRoleMessage = None
+    releaseNotesMessage = None
     if self.channelBot:
       # FIXME Parse all history until we find the instructional message
       for message in await self.channelBot.history(limit=1000).flatten():
-        if (message.author.id == self.bot.user.id) &\
-           ("⚠ notk-bot Instructions ⚠" in message.content.partition('\n')[0]):
-          amongUsRoleMessage = message
-          # await self.info(ctx, 'Found {} instructional message in {}: {}'.format(\
-          #   amongUsRoleMessage.author.mention,\
-          #   self.channelBot.mention,\
-          #   amongUsRoleMessage.jump_url))
-          match = re.search(r'Version ([0-9]+\.[0-9]+) Release Notes:', message.content)
-          if match:
-            oldVersionStr = match.group(1)
-          break
-
-    releaseNotes = ""
-    releaseNotesPath = 'RELEASE_NOTES.md'
-    releaseNotesFile = open(releaseNotesPath, 'r')
-    releaseNotesLine = "nonnull"
-    try:
-      while releaseNotesLine:
-        releaseNotesLine = releaseNotesFile.readline()
-        if releaseNotesLine:
-          releaseNotes += "\n" + releaseNotesLine
-    except:
-      await self.err(ctx, "Could not read release notes from file: '{}'".format(releaseNotesPath))
-    finally:
-      releaseNotesFile.close()
-
-    # FUTURE include all past release note in the message (in descending order)
-    amongUsRoleMessageText = \
-    """⚠ notk-bot Instructions ⚠
-Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
-Type `{}` in any public channel if you no longer want to be notified.
-{}
-Tag the `{}` role to ping all Among Us players like so: {}
-I recommend muting the {} channel; it is only for logging purposes and will be very noisy.
-
-Version {} Release Notes:{}
-""".format(\
-      cfg.cAmongUsJoinRequestMessageText,\
-      cfg.cAmongUsLeaveRequestMessageText,\
-      cfg.cAmongUsSendGameNotificationText,\
-      cfg.cAmongUsRoleName,\
-      self.roleAmongUs.mention,\
-      self.channelLog.mention,\
-      versionStr,\
-      releaseNotes)
+        if message.author.id == self.bot.user.id:
+          if cfg.cInstructionalLine in message.content.partition('\n')[0]:
+            amongUsRoleMessage = message
+            dlog.serverInfo(ctx, 'Found {} instructional message in {}: {}'.format(\
+              message.author.mention,\
+              self.channelBot.mention,\
+              message.jump_url))
+          elif message.content.startswith("\nRelease Notes:"):
+            releaseNotesMessage = message
+            dlog.serverInfo(ctx, 'Found {} release notes message in {}: {}'.format(\
+              message.author.mention,\
+              self.channelBot.mention,\
+              message.jump_url))
+            match = re.search(r'Version ([0-9]+\.[0-9]+):', message.content)
+            if match:
+              oldVersionStr = match.group(1)
 
     if not self.channelBot:
       dlog.debug(ctx, 'Creating {} channel: `#{}`'.format(self.bot.user.mention, cfg.cBotChannelName))
@@ -167,17 +164,66 @@ Version {} Release Notes:{}
         reason="Need a place to put our instructional message and send join/leave notifications")
       await self.info(ctx, 'Created {} channel: {}'.format(self.bot.user.mention, self.channelBot.mention))
 
-      await self.channelBot.send(content="{}{} has added support for the Among Us player group via the {} role.".format(\
-        roleMod.mention + ", " if roleMod else "",\
-        self.bot.user.mention,\
-        self.roleAmongUs.mention))
+      await self.channelBot.send(\
+        content="{}{} has added support for the Among Us player group via the {} role.".format(\
+          roleMod.mention + ", " if roleMod else "",\
+          self.bot.user.mention,\
+          self.roleAmongUs.mention))
 
-    if amongUsRoleMessage == None:
+    releaseNotesMessageText = ""
+    if releaseNotes[cfg.cExternalChanges]:
+      releaseNotesMessageText += "Release notes:\n\nVersion {}:\n{}".format(versionStr, releaseNotes[cfg.cExternalChanges])
+    if not releaseNotesMessage:
+      await self.info(ctx, 'Sending `@{}` release notes message'.format(cfg.cAmongUsRoleName))
+      releaseNotesMessage = await self.channelBot.send(content=releaseNotesMessageText)
+    elif releaseNotesMessage.content == releaseNotesMessageText:
+      # This should indicate that this is a simple restart.
+      dlog.serverInfo(ctx, 'Found up-to-date {} release notes message in {}: {}'.format(\
+        releaseNotesMessage.author.mention,\
+        self.channelBot.mention,\
+        releaseNotesMessage.jump_url))
+    else:
+      # FUTURE include all past release notes in the message (in descending order)
+      await self.info(ctx, 'Updating old {} release notes message in {}: {}'.format(\
+        releaseNotesMessage.author.mention,\
+        self.channelBot.mention,\
+        releaseNotesMessage.jump_url))
+      await releaseNotesMessage.edit(content=releaseNotesText)
+      # if (versionStr != oldVersionStr) &\
+      #    releaseNotes[cfg.cExternalChanges]:
+      if releaseNotes[cfg.cExternalChanges]:
+        await self.channelBot.send(content="{}{} has been updated!\nVersion {} Release Notes:\n{}\n".format(\
+          roleMod.mention + ", " if roleMod else "",\
+          self.bot.user.mention,\
+          versionStr,\
+          releaseNotes[cfg.cExternalChanges]))
+    if releaseNotesMessage.pinned:
+      await self.info(ctx, '`@{}` release notes message already pinned.'.format(cfg.cAmongUsRoleName))
+    else:
+      await self.info(ctx, 'Pinning `@{}` release notes message'.format(cfg.cAmongUsRoleName))
+      await releaseNotesMessage.pin(\
+        reason="The `@{}` release notes message will get buried if it isn't pinned".format(cfg.kBotName))
+
+    amongUsRoleMessageText = \
+    """{}
+Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
+Type `{}` in any public channel if you no longer want to be notified.
+{}
+Tag the `{}` role to ping all Among Us players like so: {}
+I recommend muting the {} channel; it is only for logging purposes and will be very noisy.""".format(\
+      cfg.cInstructionalLine,\
+      cfg.cAmongUsJoinRequestMessageText,\
+      cfg.cAmongUsLeaveRequestMessageText,\
+      cfg.cAmongUsSendGameNotificationText,\
+      cfg.cAmongUsRoleName,\
+      self.roleAmongUs.mention,\
+      self.channelLog.mention)
+    if not amongUsRoleMessage:
       await self.info(ctx, 'Sending `@{}` instructional message'.format(cfg.cAmongUsRoleName))
       amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
     elif amongUsRoleMessage.content == amongUsRoleMessageText:
       # This should indicate that this is a simple restart.
-      await self.info(ctx, 'Found up-to-date {} instructional message in {}: {}'.format(\
+      dlog.serverInfo(ctx, 'Found up-to-date {} instructional message in {}: {}'.format(\
         amongUsRoleMessage.author.mention,\
         self.channelBot.mention,\
         amongUsRoleMessage.jump_url))
@@ -187,18 +233,12 @@ Version {} Release Notes:{}
         self.channelBot.mention,\
         amongUsRoleMessage.jump_url))
       await amongUsRoleMessage.edit(content=amongUsRoleMessageText)
-      if (versionStr != oldVersionStr):
-        await self.channelBot.send(content="{}{} has been updated!\nVersion {} Release Notes:\n{}\n".format(\
-          roleMod.mention + ", " if roleMod else "",\
-          self.bot.user.mention,\
-          versionStr,\
-          releaseNotes))
-    
     if amongUsRoleMessage.pinned:
-      await self.info(ctx, '`@{}` instructional message already pinned.'.format(cfg.cAmongUsRoleName))
+      dlog.serverInfo(ctx, '`@{}` instructional message already pinned.'.format(cfg.cAmongUsRoleName))
     else:
       await self.info(ctx, 'Pinning `@{}` instructional message'.format(cfg.cAmongUsRoleName))
-      await amongUsRoleMessage.pin(reason="The `@{}` instructional message needs to be very visible to be useful".format(cfg.kBotName))
+      await amongUsRoleMessage.pin(\
+        reason="The `@{}` instructional message needs to be very visible to be useful".format(cfg.kBotName))
 
     await self.info(ctx, "{} started.".format(__name__))
 
@@ -262,15 +302,16 @@ Version {} Release Notes:{}
             ctx.author.name,\
             member.name))
         await self.channelBot.send(\
-          content="Hey {} players! {} is now among the Among Us players!".format(\
-            self.roleAmongUs.mention,\
+          content="Hey `@{}` players! {} is now among the Among Us players!".format(\
+            self.roleAmongUs.name,\
             member.mention))
         if not member.bot:
           await member.send(\
-            content="You have been added to `{}`'s Among Us players. Type `{}` in any public channel in `{}` to leave the Among Us players.".format(\
-              ctx.guild.name,\
-              cfg.cAmongUsLeaveRequestMessageText,\
-              ctx.guild.name))
+            content="You have been added to `{}`'s Among Us players. Type `{}` in any public channel in `{}` to " +
+              "leave the Among Us players.".format(\
+                ctx.guild.name,\
+                cfg.cAmongUsLeaveRequestMessageText,\
+                ctx.guild.name))
     if (len(alreadyMemberNames) > 0):
       await dlog.warn(self, ctx, "`@{}` {} already among the `@{}` players".format(\
         "`, `@".join(alreadyMemberNames),\
@@ -320,7 +361,7 @@ Version {} Release Notes:{}
     await dlog.warn(self, ctx, msg)
 
   async def err(self, ctx, msg):
-    await Error.err(self, ctx, msg)
+    await Error.dErr(self, ctx, msg)
 
   async def errMinor(self, ctx, msg):
     await Error.errMinor(self, ctx, msg)

@@ -25,8 +25,14 @@ def debug(ctx, msg):
 def serverLog(ctx, msg):
   Logging.log("{}.{}: {}".format(ctx.guild.name, ctx.author.name, msg))
 
+def serverError(ctx, msg):
+  serverLog(ctx, "ERROR:   {}".format(msg))
+
 def serverWarn(ctx, msg):
   serverLog(ctx, "WARNING: {}".format(msg))
+
+def serverInfo(ctx, msg):
+  serverLog(ctx, "INFO:    {}".format(msg))
 
 async def logSevere(guildBot, ctx, msg):
   serverLog(ctx, msg)

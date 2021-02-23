@@ -9,7 +9,7 @@ import Logging as log
 
 async def err(msg):
   await log.err(msg)
-  raise Exception(msg)
+  raise NotkException(msg)
 
 async def dErr(guildBot, ctx, msg):
   await dlog.err(guildBot, ctx, msg)

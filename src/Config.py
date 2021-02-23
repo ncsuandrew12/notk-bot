@@ -10,6 +10,8 @@ class Config:
     self.cCommandNewGame = "newgame"
     self.cRoleModPrefix = "mod"
     self.cRoleModSubstring = "moderator"
+    self.cExternalChanges = "EXTERNAL CHANGES"
+    self.cInstructionalLine = "⚠ notk-bot Instructions ⚠"
 
     cCommandRoot = "au" # Must match the @bot.commmand() function name
 
