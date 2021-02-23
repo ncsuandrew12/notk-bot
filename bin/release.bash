@@ -31,7 +31,7 @@ if [[ ! -f release_notes ]]; then
     exit 3
 fi
 
-major=0
+major=-1
 minor=0;
 if [ `git tag --list | wc -l` -gt 0 ]; then
     # TODO Generalize to any number of digits
@@ -42,13 +42,14 @@ if [ `git tag --list | wc -l` -gt 0 ]; then
     latestMinor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMinor)
 
     major=$((latestMajor))
-    if [ $majorRelease -eq 1 ]; then
-        major=$((major+1))
-        minor=0
-    else
-        minor=$((latestMinor+1))
-    fi
 fi;
+
+if [ $majorRelease -eq 1 ]; then
+    major=$((major+1))
+    minor=0
+else
+    minor=$((latestMinor+1))
+fi
 
 newVersion="${major}.${minor}"
 
