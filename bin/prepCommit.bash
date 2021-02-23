@@ -8,6 +8,7 @@ set -x
 cd ${ROOT_DIR}
 
 git add *
+git add .gitignore
 
 set -e
 
