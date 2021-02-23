@@ -78,7 +78,7 @@ if [ $dryRun -eq 0 ]; then
     echo "Creating release directory."
     mkdir -p releases/${tagLabel}
 
-    echo "Moving release notes."
+    echo "Copying release notes."
     cp RELEASE_NOTES releases/${tagLabel}/RELEASE_NOTES
 
     echo "Documenting version."
