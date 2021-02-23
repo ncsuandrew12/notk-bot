@@ -26,7 +26,7 @@ if [ $dryRun -eq 0 ]; then
     git push
 fi
 
-if [[ ! -f release_notes ]]; then
+if [[ ! -f RELEASE_NOTES ]]; then
     >&2 echo "Missing release notes!"
     exit 3
 fi
@@ -71,8 +71,7 @@ if [ $dryRun -eq 0 ]; then
     mkdir -p releases/${tagLabel}
 
     echo "Moving release notes."
-    cp release_notes RELEASE_NOTES
-    mv release_notes releases/${tagLabel}/RELEASE_NOTES
+    cp RELEASE_NOTES releases/${tagLabel}/RELEASE_NOTES
 
     echo "Documenting version."
     echo ${tagLabel} > VERSION
