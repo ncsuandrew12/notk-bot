@@ -18,6 +18,7 @@ User-comprehensible TODOs:
 -"Close" games and delete old newgame messages.
 -Add description argument to newgame command
 -Add TODO list to a pinned bot channel message
+-Make among-us-voice-text only visible to the people in the voice chat.
 
 Technical/development TODOs:
 -Automated tests
