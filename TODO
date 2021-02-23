@@ -11,14 +11,14 @@ User-comprehensible TODOs:
 -Rename "among-us" role to "crewmates"?
 -Mention channels in more of the log messages (instead of simply naming them)
 -Point new users to the rules
+-When a new game command is sent:
+--Mute all players in among us voice chat
+--Send the TTS message
+--Unmute any players that weren't already muted
 
 Technical/development TODOs:
 -Automated tests
--Improve setup/start
--Move command processing into GuildBot class
 -Move developer information to config file
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
--Fix instructional message update
---Update the instructional message by editing instead of replacing
 -Generalize RoleEnroller
 -Move lists of deployment files from scripts to dedicated file list files

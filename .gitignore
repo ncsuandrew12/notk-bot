@@ -3,4 +3,5 @@ diff.diff
 
 *.token
 *.code-workspace
-Release_Notes.md
+RELEASE_NOTES.md
+VERSION
