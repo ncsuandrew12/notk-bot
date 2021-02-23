@@ -345,8 +345,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
             member.mention))
         if not member.bot:
           await member.send(\
-            content="You have been added to `{}`'s Among Us players. Type `{}` in any public channel in `{}` to " +
-              "leave the Among Us players.".format(\
+            content="You have been added to `{}`'s Among Us players. Type `{}` in any public channel in `{}` to leave the Among Us players.".format(\
                 ctx.guild.name,\
                 cfg.cAmongUsLeaveRequestMessageText,\
                 ctx.guild.name))
