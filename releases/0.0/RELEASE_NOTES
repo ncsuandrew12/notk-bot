@@ -1,0 +1,8 @@
+EXTERNAL CHANGES
+-New Among Us player messages will no longer tag the @among-us role.
+-Slightly reduced verbosity of log channel logs.
+-Added versioning and release notes information to bot channel updates. Updated many log messages.
+
+INTERNAL CHANGES
+-Moved command processing into GuildBot.
+-Updated release/deployment scripts. Switched startup code to update old instructional message.
