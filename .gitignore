@@ -1,7 +1,7 @@
-.vscode
-diff.diff
+/.vscode
+/RELEASE_NOTES
+/VERSION
+/diff.diff
 
 *.token
 *.code-workspace
-RELEASE_NOTES
-VERSION
