@@ -19,6 +19,7 @@ User-comprehensible TODOs:
 -Add description argument to newgame command
 -Add TODO list to a pinned bot channel message
 -Make among-us-voice-text only visible to the people in the voice chat.
+-Update latest version message if release notes have changes
 
 Technical/development TODOs:
 -Automated tests
