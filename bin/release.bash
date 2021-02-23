@@ -87,7 +87,7 @@ if [ $dryRun -eq 0 ]; then
     echo "Committing changes."
     git add releases/${tagLabel}
     git commit -m "Prepping release: $tagLabel"
-    git push
+    git push --set-upstream origin release/${major}
 
     echo "Labelling release."
     git tag -a "$tagLabel" -m "Tagging $tagLabel"
