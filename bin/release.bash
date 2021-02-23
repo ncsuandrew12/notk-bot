@@ -35,11 +35,11 @@ major=0
 minor=0;
 if [ `git tag --list | wc -l` -gt 0 ]; then
     # TODO Generalize to any number of digits
-    latestVersion=`git tag --list | sed -r 's/\.([0-9])$/.0\1/g' | sed -r 's/\.([0-9][0-9])$/.0\1/g' | sort | tail -1`
+    latestVersion=`git describe --abbrev=0`
     latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
     latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
-    latestMajor=$(sed -r 's/^0+([1-9][0-9]*)/\1/' <<< $latestMajor)
-    latestMinor=$(sed -r 's/^0+([1-9][0-9]*)/\1/' <<< $latestMinor)
+    latestMajor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMajor)
+    latestMinor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMinor)
 
     major=$((latestMajor))
     if [ $majorRelease -eq 1 ]; then
@@ -70,8 +70,8 @@ if [ $dryRun -eq 0 ]; then
     mkdir -p releases/${tagLabel}
 
     echo "Moving release notes."
-    cp release_notes RELEASE_NOTES.md
-    mv release_notes releases/${tagLabel}/RELEASE_NOTES.md
+    cp release_notes RELEASE_NOTES
+    mv release_notes releases/${tagLabel}/RELEASE_NOTES
 
     echo "Documenting version."
     echo ${tagLabel} > VERSION

@@ -15,6 +15,8 @@ User-comprehensible TODOs:
 --Mute all players in among us voice chat
 --Send the TTS message
 --Unmute any players that weren't already muted
+-"Close" games and delete old newgame messages.
+-Add description argument to newgame command
 
 Technical/development TODOs:
 -Automated tests

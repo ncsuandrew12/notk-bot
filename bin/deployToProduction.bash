@@ -14,7 +14,7 @@ fi
 
 echo "Deploying to production"
 
-cp -vf ${ROOT_DIR}/RELEASE_NOTES.md ${TARGET}/
+cp -vf ${ROOT_DIR}/RELEASE_NOTES ${TARGET}/
 cp -vf ${ROOT_DIR}/VERSION ${TARGET}/
 
 cp -vf ${ROOT_DIR}/src/*.py ${TARGET}/
