@@ -17,6 +17,7 @@ User-comprehensible TODOs:
 --Unmute any players that weren't already muted
 -"Close" games and delete old newgame messages.
 -Add description argument to newgame command
+-Add TODO list to a pinned bot channel message
 
 Technical/development TODOs:
 -Automated tests

@@ -26,6 +26,7 @@ class GuildBot:
 
     dlog.debug(ctx, "Starting {} (before channel located)".format(__name__))
 
+    # Get version information from file
     versionStr=""
     versionPath = 'VERSION'
     versionFile = open(versionPath, 'r')
@@ -40,6 +41,7 @@ class GuildBot:
       versionFile.close()
     dlog.serverInfo(ctx, "Version: {}".format(versionStr))
 
+    # Get release notes information from file
     releaseNotes = {}
     releaseNotesPath = 'RELEASE_NOTES'
     releaseNotesFile = open(releaseNotesPath, 'r')
@@ -63,6 +65,7 @@ class GuildBot:
       releaseNotesFile.close()
     dlog.serverInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
 
+    # Check for existing channels
     for channel in guild.channels:
       if channel.name == cfg.cBotChannelName:
         self.channelBot = channel
@@ -77,6 +80,7 @@ class GuildBot:
     #   await self.channelBot.delete(reason="pre-setup")
     #   guildBot.channelBot = None
 
+    # Create the main bot channel if necessary
     if not self.channelLog:
       dlog.debug(ctx, 'Creating {} log channel: `#{}`'.format(self.bot.user.mention, cfg.cLogChannelName))
       overwrites = {
@@ -100,6 +104,7 @@ class GuildBot:
     #   if role.name == cfg.cAmongUsRoleName:
     #     await role.delete(reason="cleanup")
 
+    # Check for existing roles
     for role in guild.roles:
       if bool(roleMod) &\
          (role.name.lower().startswith(cfg.cRoleModPrefix.lower()) |\
@@ -112,10 +117,10 @@ class GuildBot:
       # DO NOT mention the role. We don't need to tag all the players in this log message, lol.
       await self.info(ctx, 'Found: `@{}`'.format(role.name))
 
-    # TODO Enable, but avoid sending messages to just whoever sent the command
-    # if not roleMod:
-    #   await dlog.warn(self, "{} role not found.".format(cfg.cRoleModPrefix))
+    if not roleMod:
+      await dlog.serverWarn(ctx, "{} role not found.".format(cfg.cRoleModPrefix))
 
+    # Create the role
     if not self.roleAmongUs:
       await self.info(ctx, 'Creating `@{}`'.format(cfg.cAmongUsRoleName))
       self.roleAmongUs = await guild.create_role(\
@@ -125,6 +130,7 @@ class GuildBot:
         reason="Allow users to easily ping everyone interested in playing Among Us.")
         #colour=Colour.gold,\
 
+    # Check the existing pinned messages and parse data from them
     oldVersionStr = "0.0"
     amongUsRoleMessage = None
     releaseNotesMessage = None
@@ -148,6 +154,7 @@ class GuildBot:
             if match:
               oldVersionStr = match.group(1)
 
+    # Create main bot channel
     if not self.channelBot:
       dlog.debug(ctx, 'Creating {} channel: `#{}`'.format(self.bot.user.mention, cfg.cBotChannelName))
       overwrites = {
@@ -170,6 +177,7 @@ class GuildBot:
           self.bot.user.mention,\
           self.roleAmongUs.mention))
 
+    # Handle release notes pinned message
     releaseNotesMessageText = ""
     if releaseNotes[cfg.cExternalChanges]:
       releaseNotesMessageText += "Release notes:\n\nVersion {}:\n{}".format(versionStr, releaseNotes[cfg.cExternalChanges])
@@ -189,9 +197,8 @@ class GuildBot:
         self.channelBot.mention,\
         releaseNotesMessage.jump_url))
       await releaseNotesMessage.edit(content=releaseNotesText)
-      # if (versionStr != oldVersionStr) &\
-      #    releaseNotes[cfg.cExternalChanges]:
-      if releaseNotes[cfg.cExternalChanges]:
+      if (versionStr != oldVersionStr) &\
+         releaseNotes[cfg.cExternalChanges]:
         await self.channelBot.send(content="{}{} has been updated!\nVersion {} Release Notes:\n{}\n".format(\
           roleMod.mention + ", " if roleMod else "",\
           self.bot.user.mention,\
@@ -204,6 +211,7 @@ class GuildBot:
       await releaseNotesMessage.pin(\
         reason="The `@{}` release notes message will get buried if it isn't pinned".format(cfg.kBotName))
 
+    # Handle instructional pinned message
     amongUsRoleMessageText = \
     """{}
 Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
@@ -245,6 +253,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
   async def Command(self, ctx, cmd, *args):
     dlog.debug(ctx, "Processing command: `{} {}`".format(cmd, " ".join(args)))
 
+    # Parse the arguments as tagged members
     members = []
     memberNames = []
     resolved = []
