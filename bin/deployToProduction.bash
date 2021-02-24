@@ -23,3 +23,5 @@ mkdir -p ${TARGET}/cfg/
 cp -rvf ${ROOT_DIR}/cfg/production/* ${TARGET}/cfg/
 
 echo "Deployed to production!"
+
+./bin/restartProductionServer.bash

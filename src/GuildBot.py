@@ -223,7 +223,7 @@ class GuildBot:
         self.channelBot.mention,\
         releaseNotesMessage.jump_url))
     else:
-      await self.info(ctx, 'Updating old {} release notes message in {}: {}'.format(\
+      await self.info(ctx, 'Updating existing {} release notes message in {}: {}'.format(\
         releaseNotesMessage.author.mention,\
         self.channelBot.mention,\
         releaseNotesMessage.jump_url))
@@ -265,7 +265,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         self.channelBot.mention,\
         amongUsRoleMessage.jump_url))
     else:
-      await self.info(ctx, 'Updating old {} instructional message in {}: {}'.format(\
+      await self.info(ctx, 'Updating existing {} instructional message in {}: {}'.format(\
         amongUsRoleMessage.author.mention,\
         self.channelBot.mention,\
         amongUsRoleMessage.jump_url))

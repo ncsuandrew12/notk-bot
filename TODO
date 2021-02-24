@@ -20,6 +20,10 @@ User-comprehensible TODOs:
 -Add TODO list to a pinned bot channel message
 -Make among-us-voice-text only visible to the people in the voice chat.
 -Update latest version message if release notes have changes
+-Optionally sync a channel with a twitch chat
+-Send a daily/weekly bible verse to a channel
+-Among Us integration?
+-Steam integration
 
 Technical/development TODOs:
 -Automated tests
@@ -27,3 +31,4 @@ Technical/development TODOs:
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Generalize RoleEnroller
 -Move lists of deployment files from scripts to dedicated file list files
+-Logging library

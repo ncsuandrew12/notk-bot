@@ -7,3 +7,5 @@
 
 *.token
 *.code-workspace
+
+production-server/secret.json
