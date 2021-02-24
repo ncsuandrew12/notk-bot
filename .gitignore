@@ -5,7 +5,5 @@
 /VERSION
 /diff.diff
 
-*.token
 *.code-workspace
-
-production-server/secret.json
+**/secrets.json

@@ -1,13 +1,14 @@
 # Modules
 import discord
-import os
+import json
 
 from discord.ext import commands
 
 # notk-bot
+import Logging as log
+
 from Config import cfg
 from GuildBotManager import GuildBotManager
-import Logging as log
 
 # Get function name
 #import inspect
@@ -17,22 +18,9 @@ import Logging as log
 kIntents = discord.Intents.default()
 kIntents.members = True
 
-tokenFilePath = 'cfg/discord.token'
-if os.path.exists(tokenFilePath):
-  tokenFile = open(tokenFilePath, 'r')
-  try:
-    token = tokenFile.readline()
-  except:
-    log.err("Could not read token from file: '{}'".format(tokenFilePath))
-    raise
-  finally:
-    tokenFile.close()
-else:
-  token = os.getenv('TOKEN')
-
 bot = commands.Bot(command_prefix=cfg.cCommandPrefix, intents=kIntents)
 
-notkBot = GuildBotManager(bot, token)
+notkBot = GuildBotManager(bot, cfg.cToken)
 
 @bot.event
 async def on_ready():
@@ -45,8 +33,8 @@ async def au(ctx, cmd, *args):
 try:
   notkBot.Run()
 except Exception as e:
-  Logging.log.err("Error while running bot: {}".format(e))
+  log.error("Error while running bot: {}".format(e))
   raise
 except:
-  Logging.log.err("Error while running bot!")
+  log.error("Error while running bot!")
   raise

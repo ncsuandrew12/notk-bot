@@ -1,5 +1,6 @@
 # Modules
 import json
+import os
 
 # notk-bot
 
@@ -22,6 +23,7 @@ class Config:
       config = json.load(file)
 
     unviersalSuffix = config["universalSuffix"]
+    secretsFile = "cfg/" + config["secretFile"]
 
     self.kBotName += "{}".format(unviersalSuffix)
 
@@ -40,13 +42,26 @@ class Config:
         cCommandBase,\
         self.cCommandNewGame)
 
+    try:
+      tokenFile = open(secretsFile, 'r')
+      secrets = json.load(tokenFile)
+      self.cToken = secrets["token"]
+    except:
+      print("ERROR: Could not read token from file: '{}'".format(secretsFile))
+      raise
+    finally:
+      tokenFile.close()
+
+    if not self.cToken:
+      raise Exception("Discord API token could not be found")
+
 cfgFile = 'cfg/config.json'
 
 try:
   cfg = Config(cfgFile)
 except Exception as e:
-  print('Error loading config file: {}: {}'.format(e, cfgFile))
+  print('ERROR: loading config file: {}: {}'.format(e, cfgFile))
   raise
 except:
-  print('Error loading config file: {}'.format(cfgFile))
+  print('ERROR: loading config file: {}'.format(cfgFile))
   raise

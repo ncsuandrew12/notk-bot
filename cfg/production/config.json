@@ -1,4 +1,5 @@
 {
   "commandPrefix": "$",
-  "universalSuffix": ""
+  "universalSuffix": "",
+  "secretFile": "secrets.json"
 }

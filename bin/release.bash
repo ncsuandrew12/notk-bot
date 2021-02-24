@@ -13,6 +13,7 @@ majorRelease=0
 
 version=""
 
+argCnt=0
 while (( "$#" )); do
     case "$1" in
         -d|--dry-run)
@@ -37,12 +38,13 @@ while (( "$#" )); do
             exit 1
             ;;
         *) # preserve positional arguments
-            if [ $version == "" ]; then
+            if [ $argCnt -eq 0 ]; then
                 version="$1"
             else
                 >&2 echo "ERROR: Unexpected argument $1"
                 exit 2
             fi
+            $((argCnt+1))
             shift
             ;;
     esac

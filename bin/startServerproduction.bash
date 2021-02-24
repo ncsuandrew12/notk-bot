@@ -5,10 +5,10 @@ source ${DIR}/common.bash
 
 set -e
 
-serverID=$(jq -r '.serverID' ${ROOT_DIR}/production-server/cfg.json)
-secretFile=$(jq -r '.secretFile' ${ROOT_DIR}/production-server/cfg.json)
+serverID=$(jq -r '.production.serverID' ${ROOT_DIR}/bin/config.json)
+secretFile=$(jq -r '.production.secretFile' ${ROOT_DIR}/bin/config.json)
 
-token=$(jq -r '.token' ${ROOT_DIR}/production-server/$secretFile)
+token=$(jq -r '.token' ${ROOT_DIR}/bin/$secretFile)
 
 echo "Restarting server!"
 

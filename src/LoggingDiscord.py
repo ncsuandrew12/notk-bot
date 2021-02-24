@@ -1,8 +1,6 @@
 # Modules
-# import discord
 
 # notk-bot
-# import GuildBot
 import Logging
 
 async def log(guildBot, ctx, msg):

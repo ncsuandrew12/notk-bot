@@ -24,6 +24,8 @@ User-comprehensible TODOs:
 -Send a daily/weekly bible verse to a channel
 -Among Us integration?
 -Steam integration
+-Include all past release notes in release notes message if the bot is starting on a new Discord
+-Integrate into Discord / commands
 
 Technical/development TODOs:
 -Automated tests
