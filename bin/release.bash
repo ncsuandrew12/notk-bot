@@ -11,22 +11,48 @@ cd "${ROOT_DIR}"
 dryRun=0
 majorRelease=0
 
-if [ "$1" == "--dry-run" ]; then
-    dryRun=1
-fi
+version=""
 
-if [ "$1" == "--major-release" ]; then
-    majorRelease=1
-fi
-if [ "$2" == "--major-release" ]; then
-    majorRelease=1
-fi
+while (( "$#" )); do
+    case "$1" in
+        -d|--dry-run)
+            dryRun=1
+            shift
+            ;;
+        -m|--major-release)
+            majorRelease=1
+            shift
+            ;;
+        # -e|--version)
+        #     if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        #     MY_FLAG_ARG=$2
+        #     shift 2
+        #     else
+        #     >&2 echo "ERROR: Argument for $1 is missing"
+        #     exit 1
+        #     fi
+        #     ;;
+        -*|--*=) # unsupported flags
+            >&2 echo "ERROR: Unsupported parameter $1"
+            exit 1
+            ;;
+        *) # preserve positional arguments
+            if [ $version == "" ]; then
+                version="$1"
+            else
+                >&2 echo "ERROR: Unexpected argument $1"
+                exit 2
+            fi
+            shift
+            ;;
+    esac
+done
 
 if [[ `git status --short | wc -l` -ne 0 ]]; then
     >&2 echo "ERROR: Uncommitted files:"
     git status
-    exit 1
-fi;
+    exit 3
+fi
 
 if [ $dryRun -eq 0 ]; then
     echo "Pushing changes."
@@ -35,21 +61,28 @@ fi
 
 if [[ ! -f RELEASE_NOTES ]]; then
     >&2 echo "Missing release notes!"
-    exit 3
+    exit 4
 fi
 
 major=-1
-minor=0;
-if [ `git tag --list | wc -l` -gt 0 ]; then
-    # TODO Generalize to any number of digits
-    latestVersion=`git describe --abbrev=0`
-    latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
-    latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
-    latestMajor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMajor)
-    latestMinor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMinor)
+minor=0
+if [[ $version =~ ^[0-9]+\.[0-9]+$ ]]; then
+    major=$(sed -r 's/\..*$//' <<< $version)
+    minor=$(sed -r 's/^.*\.//' <<< $version)
+elif [ "$version" == "" ]; then
+    if [ `git tag --list | wc -l` -gt 0 ]; then
+        latestVersion=`git describe --abbrev=0`
+        latestMajor=$(sed s'/\.[^.]*$//' <<< $latestVersion)
+        latestMinor=$(sed s'/[^.]*\.//' <<< $latestVersion)
+        latestMajor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMajor)
+        latestMinor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMinor)
 
-    major=$((latestMajor))
-fi;
+        major=$((latestMajor))
+    fi
+else
+    >&2 echo "ERROR: Invalid version string given: \'${version}\'"
+    exit 5
+fi
 
 if [ $majorRelease -eq 1 ]; then
     major=$((major+1))
@@ -67,7 +100,7 @@ echo
 doRelease=$(tr '[:upper:]' '[:lower:]' <<< $doRelease)
 if [[ ! $doRelease =~ ^[Yy]$ ]]; then
     >&2 echo "Release cancelled!"
-    exit 2
+    exit 6
 fi
 if [ $dryRun -eq 0 ]; then
     echo "Creating release branch"
