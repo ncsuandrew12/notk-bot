@@ -32,5 +32,4 @@ Technical/development TODOs:
 -Move developer information to config file
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Generalize RoleEnroller
--Move lists of deployment files from scripts to dedicated file list files
 -Logging library

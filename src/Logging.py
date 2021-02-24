@@ -1,34 +1,31 @@
 # Modules
+import inspect
+import re
 
 # notk-bot
 from Config import cfg
 
-def log(msg):
-  print("{}| {}".format(cfg.kBotName.upper(), msg))
-
-def label(lbl, msg):
-  return lbl + ":" + ((len("WARNING: ") - len(lbl) - 1) * " ") + msg
-
-def labelError(msg):
-  return label("ERROR", msg)
-
-def labelWarn(msg):
-  return label("WARNING", msg)
-
-def labelInfo(msg):
-  return label("INFO", msg)
-
-def labelDebug(msg):
-  return label("DEBUG", msg)
+def log(lvl, msg):
+  frame = inspect.currentframe()
+  while (re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename).startswith("Logging")):
+    frame = frame.f_back
+  print("{}| {}{}:{} {}{} {}".format(\
+    cfg.kBotName.upper(),\
+    lvl + ":" + ((len("WARNING: ") - len(lvl) - 1) * " "),
+    re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename),\
+    frame.f_lineno,\
+    "",\
+    frame.f_code.co_name,\
+    msg))
 
 def error(msg):
-  log(labelError(msg))
+  log("ERROR", msg)
 
 def warn(msg):
-  log(labelWarn(msg))
+  log("WARNING", msg)
 
 def info(msg):
-  log(labelInfo(msg))
+  log("INFO", msg)
 
 def debug(msg):
-  log(labelDebug(msg))
+  log("DEBUG", msg)
