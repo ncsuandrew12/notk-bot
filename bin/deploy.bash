@@ -39,7 +39,7 @@ case "$target" in
 esac
 
 deploymentJson=$(jq -r ".${target}" ${ROOT_DIR}/bin/config.json)
-targetDir=$(jq -r ".dir" <<< $deploymentJson)
+targetDir=/home/`whoami`/$(jq -r ".dir" <<< $deploymentJson)
 
 tag=`git tag --points-at HEAD`
 
@@ -52,7 +52,7 @@ if [[ ! -e $targetDir ]]; then
     mkdir -p $targetDir
     if [ $production -eq 1 ]; then
         mkdir -p $targetDir
-        sudo sshfs -o allow_other -p $(jq -r ".port" <<< $deploymentJson) $(jq -r ".host" <<< $deploymentJson): $targetDir
+        sshfs -p $(jq -r ".port" <<< $deploymentJson) `whoami`@$(jq -r ".host" <<< $deploymentJson) $targetDir
     fi
 fi
 

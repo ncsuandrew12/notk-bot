@@ -1,12 +1,12 @@
 {
   "production": {
-    "dir": "/production/notk-bot",
+    "dir": "notk-bot-deployments/productionServer",
     "port": "2053",
     "host": "g1hl8zwb.13178b58@bk29.r03.plox.host",
     "serverID": "13178b58",
     "secretFile": "secrets.json"
   },
   "test": {
-    "dir": "/test/notk-bot"
+    "dir": "notk-bot-deployments/testServer"
   }
 }
