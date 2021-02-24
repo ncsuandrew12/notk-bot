@@ -66,7 +66,6 @@ class GuildBot:
     dlog.sInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
 
     # Check for existing channels
-    channelNames = []
     for channel in guild.channels:
       if channel.name == cfg.cBotChannelName:
         self.channelBot = channel
@@ -118,7 +117,6 @@ class GuildBot:
         self.roleAmongUs = role
       else:
         continue
-      # DO NOT mention the role. We don't need to tag all the players in this log message, lol.
       dlog.sInfo(ctx, 'Found: `@{}`'.format(role.name))
     dlog.sInfo(ctx, 'Roles: `{}`'.format('`, `@'.join(modNames)))
 

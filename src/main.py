@@ -15,22 +15,26 @@ kIntents = discord.Intents.default()
 kIntents.members = True
 
 bot = commands.Bot(command_prefix=cfg.cCommandPrefix, intents=kIntents)
+botThread = None
 
-notkBot = GuildBotManager(bot, cfg.cToken)
+notkBotManager = GuildBotManager(bot, cfg.cToken)
 
 @bot.event
 async def on_ready():
-  await notkBot.OnReady()
+  await notkBotManager.OnReady()
 
 @bot.command()
 async def au(ctx, cmd, *args):
-  await notkBot.Command(ctx, cmd, *args)
+  await notkBotManager.Command(ctx, cmd, *args)
 
-try:
-  notkBot.Run()
-except Exception as e:
-  log.error("Error while running bot: {}".format(e))
-  raise
-except:
-  log.error("Error while running bot!")
-  raise
+def run():
+  try:
+    notkBotManager.Run()
+  except Exception as e:
+    log.error("Error while running bot: {}".format(e))
+    raise
+  except:
+    log.error("Error while running bot!")
+    raise
+
+run()

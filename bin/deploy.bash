@@ -19,7 +19,7 @@ while (( "$#" )); do
                 >&2 echo "ERROR: Unexpected argument $1"
                 exit 2
             fi
-            $((argCnt+1))
+            argCnt=$((argCnt+1))
             shift
             ;;
     esac
@@ -66,5 +66,3 @@ mkdir -p ${targetDir}/cfg/
 cp -rvf ${ROOT_DIR}/cfg/$target/* ${targetDir}/cfg/
 
 echo "Deployed to $target!"
-
-${ROOT_DIR}/bin/startServer${target}.bash
