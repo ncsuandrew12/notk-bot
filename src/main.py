@@ -10,10 +10,6 @@ import Logging as log
 from Config import cfg
 from GuildBotManager import GuildBotManager
 
-# Get function name
-#import inspect
-# inspect.currentframe().f_code.co_name
-
 # Needed to be able to list members (for mapping member name arguments to actual members)
 kIntents = discord.Intents.default()
 kIntents.members = True

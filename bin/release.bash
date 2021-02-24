@@ -80,6 +80,7 @@ elif [ "$version" == "" ]; then
         latestMinor=$(sed -r 's/^0*([0-9]+)/\1/' <<< $latestMinor)
 
         major=$((latestMajor))
+        minor=$((latestMinor))
     fi
 else
     >&2 echo "ERROR: Invalid version string given: \'${version}\'"
@@ -90,7 +91,7 @@ if [ $majorRelease -eq 1 ]; then
     major=$((major+1))
     minor=0
 else
-    minor=$((latestMinor+1))
+    minor=$((minor+1))
 fi
 
 newVersion="${major}.${minor}"

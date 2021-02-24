@@ -51,7 +51,6 @@ fi
 if [[ ! -e $targetDir ]]; then
     mkdir -p $targetDir
     if [ $production -eq 1 ]; then
-        mkdir -p $targetDir
         sshfs -p $(jq -r ".port" <<< $deploymentJson) `whoami`@$(jq -r ".host" <<< $deploymentJson) $targetDir
     fi
 fi

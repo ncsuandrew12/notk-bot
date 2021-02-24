@@ -12,7 +12,6 @@ token=$(jq -r '.token' ${ROOT_DIR}/bin/$secretFile)
 
 echo "Restarting server!"
 
-#   -H 'Accept: application/json' \
 curl "https://games.plox.host/api/client/servers/${serverID}/power" \
   -H "Authorization: Bearer ${token}" \
   -H 'Content-Type: application/json' \
