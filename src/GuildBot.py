@@ -35,11 +35,11 @@ class GuildBot:
       if len(versionStr) < 3: # M.m
         await err(ctx, "Could not read version information from file: '{}'".format(versionPath))
     except:
-      dlog.serverError(ctx, "Could not read version information from file: '{}'".format(versionPath))
+      dlog.sErr(ctx, "Could not read version information from file: '{}'".format(versionPath))
       raise
     finally:
       versionFile.close()
-    dlog.serverInfo(ctx, "Version: {}".format(versionStr))
+    dlog.sInfo(ctx, "Version: {}".format(versionStr))
 
     # Get release notes information from file
     releaseNotes = {}
@@ -57,15 +57,16 @@ class GuildBot:
         elif rawLine:
           releaseNotes[releaseNotesSection] += rawLine
     except Exception as e:
-      dlog.serverError(ctx, "Could not read release notes from file: '{}'".format(releaseNotesPath))
+      dlog.sErr(ctx, "Could not read release notes from file: '{}'".format(releaseNotesPath))
       raise
     finally:
       releaseNotesFile.close()
     for key in releaseNotes:
       releaseNotes[releaseNotesSection].strip()
-    dlog.serverInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
+    dlog.sInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
 
     # Check for existing channels
+    channelNames = []
     for channel in guild.channels:
       if channel.name == cfg.cBotChannelName:
         self.channelBot = channel
@@ -97,7 +98,7 @@ class GuildBot:
         reason="Need a place to put logs")
       self.info(ctx, 'Created {} log channel: `#{}`'.format(self.bot.user.mention, self.channelLog.mention))
 
-    await self.info(ctx, "Starting {}".format(__name__))
+    dlog.sInfo(ctx, "Starting {}".format(__name__))
 
     # TODO delete
     # for role in ctx.guild.roles:
@@ -118,11 +119,11 @@ class GuildBot:
       else:
         continue
       # DO NOT mention the role. We don't need to tag all the players in this log message, lol.
-      await self.info(ctx, 'Found: `@{}`'.format(role.name))
-    dlog.serverInfo(ctx, 'Roles: `{}`'.format('`, `@'.join(modNames)))
+      dlog.sInfo(ctx, 'Found: `@{}`'.format(role.name))
+    dlog.sInfo(ctx, 'Roles: `{}`'.format('`, `@'.join(modNames)))
 
     if not roleMod:
-      dlog.serverWarn(ctx, "{} role not found.".format(cfg.cRoleModPrefix))
+      dlog.sWarn(ctx, "{} role not found.".format(cfg.cRoleModPrefix))
 
     # Create the role
     if not self.roleAmongUs:
@@ -141,18 +142,18 @@ class GuildBot:
       # FIXME Parse all history until we find the instructional message
       for message in await self.channelBot.history(limit=1000).flatten():
         if message.author.id == self.bot.user.id:
-          # dlog.serverInfo(ctx, 'Found message in {}: [{}]'.format(\
+          # dlog.sInfo(ctx, 'Found message in {}: [{}]'.format(\
           #   self.channelBot.mention,\
           #   message.content))
           if cfg.cInstructionalLine in message.content.partition('\n')[0]:
             amongUsRoleMessage = message
-            dlog.serverInfo(ctx, 'Found {} instructional message in {}: {}'.format(\
+            dlog.sInfo(ctx, 'Found {} instructional message in {}: {}'.format(\
               message.author.mention,\
               self.channelBot.mention,\
               message.jump_url))
           elif message.content.startswith(cfg.cReleaseNotes):
             releaseNotesMessage = message
-            dlog.serverInfo(ctx, 'Found {} release notes message in {}: {}'.format(\
+            dlog.sInfo(ctx, 'Found {} release notes message in {}: {}'.format(\
               message.author.mention,\
               self.channelBot.mention,\
               message.jump_url))
@@ -218,15 +219,16 @@ class GuildBot:
       releaseNotesMessage = await self.channelBot.send(content=releaseNotesMessageText)
     elif releaseNotesMessage.content == releaseNotesMessageText:
       # This should indicate that this is a simple restart.
-      dlog.serverInfo(ctx, 'Found up-to-date {} release notes message in {}: {}'.format(\
+      dlog.sInfo(ctx, 'Found up-to-date {} release notes message in {}: {}'.format(\
         releaseNotesMessage.author.mention,\
         self.channelBot.mention,\
         releaseNotesMessage.jump_url))
     else:
-      await self.info(ctx, 'Updating existing {} release notes message in {}: {}'.format(\
-        releaseNotesMessage.author.mention,\
-        self.channelBot.mention,\
-        releaseNotesMessage.jump_url))
+      if (versionStr != oldVersionStr):
+        await self.info(ctx, 'Updating existing {} release notes message in {}: {}'.format(\
+          releaseNotesMessage.author.mention,\
+          self.channelBot.mention,\
+          releaseNotesMessage.jump_url))
       await releaseNotesMessage.edit(content=releaseNotesMessageText)
       if (versionStr != oldVersionStr):
         await self.channelBot.send(content="{}{} has been updated!\n{}".format(\
@@ -234,7 +236,7 @@ class GuildBot:
           self.bot.user.mention,\
           releaseNotesSections[0]))
     if releaseNotesMessage.pinned:
-      await self.info(ctx, '`@{}` release notes message already pinned.'.format(cfg.cAmongUsRoleName))
+      dlog.sInfo(ctx, '`@{}` release notes message already pinned.'.format(cfg.cAmongUsRoleName))
     else:
       await self.info(ctx, 'Pinning `@{}` release notes message'.format(cfg.cAmongUsRoleName))
       await releaseNotesMessage.pin(\
@@ -260,7 +262,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
     elif amongUsRoleMessage.content == amongUsRoleMessageText:
       # This should indicate that this is a simple restart.
-      dlog.serverInfo(ctx, 'Found up-to-date {} instructional message in {}: {}'.format(\
+      dlog.sInfo(ctx, 'Found up-to-date {} instructional message in {}: {}'.format(\
         amongUsRoleMessage.author.mention,\
         self.channelBot.mention,\
         amongUsRoleMessage.jump_url))
@@ -271,7 +273,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         amongUsRoleMessage.jump_url))
       await amongUsRoleMessage.edit(content=amongUsRoleMessageText)
     if amongUsRoleMessage.pinned:
-      dlog.serverInfo(ctx, '`@{}` instructional message already pinned.'.format(cfg.cAmongUsRoleName))
+      dlog.sInfo(ctx, '`@{}` instructional message already pinned.'.format(cfg.cAmongUsRoleName))
     else:
       await self.info(ctx, 'Pinning `@{}` instructional message'.format(cfg.cAmongUsRoleName))
       await amongUsRoleMessage.pin(\
@@ -302,9 +304,9 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
           try:
             member = await ctx.guild.fetch_member(userID)
           except Exception as e:
-            dlog.serverWarn(ctx, "userID `{}`: {}".format(userID, str(e)))
+            dlog.sWarn(ctx, "userID `{}`: {}".format(userID, str(e)))
           except:
-            dlog.serverWarn(ctx, "userID `{}`: {}".format(userID, str(sys.exc_info()[0])))
+            dlog.sWarn(ctx, "userID `{}`: {}".format(userID, str(sys.exc_info()[0])))
           else:
             if member.name not in memberNames:
               resolved.append(userIDs[userID])

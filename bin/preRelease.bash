@@ -7,8 +7,10 @@ source "${DIR}/common.bash"
 
 cd "${ROOT_DIR}"
 
-echo "Release commit history:"
 lastTag=`git describe --abbrev=0`
 commitHistory=`git log --pretty=oneline ${lastTag}..HEAD | sed -r 's/^[^ ]+ /-/'`
+
+echo "Release commit history:"
 echo -e "$commitHistory"
+
 echo -e "$commitHistory" >> RELEASE_NOTES
