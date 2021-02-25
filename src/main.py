@@ -15,7 +15,6 @@ kIntents = discord.Intents.default()
 kIntents.members = True
 
 bot = commands.Bot(command_prefix=cfg.cCommandPrefix, intents=kIntents)
-botThread = None
 
 notkBotManager = GuildBotManager(bot, cfg.cToken)
 

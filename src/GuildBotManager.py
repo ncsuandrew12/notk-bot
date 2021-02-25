@@ -25,13 +25,12 @@ class GuildBotManager:
   async def OnReady(self):
     log.debug("Starting {} {}".format(len(self.bot.guilds), GuildBot.__name__))
 
-    # TODO start the separate guild bots asynchronously
     for guild in self.bot.guilds:
       if guild.id in self.guildBots:
         continue
 
-      guildBot = GuildBot(self.bot)
-      await guildBot.setup(guild)
+      guildBot = GuildBot(self.bot, guild)
+      await guildBot.setup()
       self.guildBots[guild.id] = guildBot
 
     log.debug("{} guild bots running".format(len(self.guildBots)))

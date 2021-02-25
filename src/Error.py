@@ -7,8 +7,8 @@ from Exceptions import NotkException
 import LoggingDiscord as dlog
 import Logging as log
 
-async def err(msg):
-  await log.err(msg)
+def err(msg):
+  log.err(msg)
   raise NotkException(msg)
 
 async def dErr(guildBot, ctx, msg):

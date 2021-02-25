@@ -28,6 +28,7 @@ User-comprehensible TODOs:
 -Include all past release notes in release notes message if the bot is starting on a new Discord
 -Integrate into Discord / commands
 -Delete non-game-code messages from among-us-codes
+-Automatically delete new game messages after some set amount of time (~12? hours)
 
 Technical/development TODOs:
 -Automated tests

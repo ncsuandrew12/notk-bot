@@ -9,7 +9,9 @@ def log(lvl, msg):
   frame = inspect.currentframe()
   while (re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename).startswith("Logging")):
     frame = frame.f_back
-  print("{}| {}{}:{} {}{} {}".format(\
+
+  # TODO classname
+  print("{}| {}{}:{} {}{}| {}".format(\
     cfg.kBotName.upper(),\
     lvl + ":" + ((len("WARNING: ") - len(lvl) - 1) * " "),
     re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename),\
@@ -18,7 +20,7 @@ def log(lvl, msg):
     frame.f_code.co_name,\
     msg))
 
-def error(msg):
+def err(msg):
   log("ERROR", msg)
 
 def warn(msg):
