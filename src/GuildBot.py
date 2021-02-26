@@ -13,12 +13,29 @@ from DiscordFacsimilies import AuthorStubbed
 from DiscordFacsimilies import ContextStubbed
 
 class GuildBot:
-  def __init__(self, bot, guild):
+  def __init__(self, bot, guild, loop):
     self.bot = bot
     self.guild = guild
+    self.loop = loop
     self.channelBot = None
     self.channelLog = None
     self.roleAmongUs = None
+
+  # TODO return map
+  def GetBotChannels(self):
+    channels = []
+    for channel in self.guild.channels:
+      if channel.name in [ cfg.cBotChannelName, cfg.cLogChannelName]:
+        channels.append(channel)
+    return channels
+
+  # TODO return map
+  def GetBotRoles(self):
+    roles = []
+    for role in self.guild.roles:
+      if role.name.lower() in [ cfg.cAmongUsRoleName.lower() ]:
+        roles.append(role)
+    return roles
 
   async def startup(self):
     ctx = ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
@@ -28,31 +45,26 @@ class GuildBot:
     # TODO Instead of simply checking names, keep a persistent log of things created by the bot
 
     # Check for existing channels
-    self.botChannels = []
-    for channel in self.guild.channels:
-      if channel.name in [ cfg.cBotChannelName, cfg.cLogChannelName]:
-        if channel.name == cfg.cBotChannelName:
-          self.channelBot = channel
-        elif channel.name == cfg.cLogChannelName:
-          self.channelLog = channel
+    self.botChannels = self.GetBotChannels()
+    for channel in self.botChannels:
+      if channel.name == cfg.cBotChannelName:
+        self.channelBot = channel
+      elif channel.name == cfg.cLogChannelName:
+        self.channelLog = channel
       else:
         continue
       dlog.debug(ctx, 'Found: {}'.format(channel.mention))
-      self.botChannels.append(channel)
 
     # Check for existing roles
-    self.botRoles = []
-    for role in self.guild.roles:
+    self.botRoles = self.GetBotRoles()
+    for role in self.botRoles:
       if role.name.lower() == cfg.cAmongUsRoleName.lower():
         self.roleAmongUs = role
       else:
         continue
       dlog.sInfo(ctx, 'Found: `@{}`'.format(role.name))
-      self.botRoles.append(role)
 
   async def setup(self):
-    await self.startup()
-
     roleMod = None
 
     ctx = ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
@@ -96,7 +108,7 @@ class GuildBot:
       releaseNotesFile.close()
     for key in releaseNotes:
       releaseNotes[releaseNotesSection].strip()
-    dlog.sInfo(ctx, "Release Notes:\n{}".format(releaseNotes))
+    dlog.sInfo(ctx, "Release Notes: {}".format(releaseNotes))
 
     # TODO delete
     # if bool(self.channelBot):
@@ -119,7 +131,7 @@ class GuildBot:
         topic="NOTK Bot Log",\
         reason="Need a place to put logs")
       self.botChannels.append(self.channelLog)
-      dlog.info(self, ctx, 'Created {} log channel: `#{}`'.format(self.bot.user.mention, self.channelLog.mention))
+      await dlog.info(self, ctx, 'Created {} log channel: `#{}`'.format(self.bot.user.mention, self.channelLog.mention))
 
     dlog.sInfo(ctx, "Starting {}".format(__name__))
 
@@ -262,7 +274,7 @@ class GuildBot:
     else:
       await dlog.info(self, ctx, 'Pinning `@{}` release notes message'.format(cfg.cAmongUsRoleName))
       await releaseNotesMessage.pin(\
-        reason="The `@{}` release notes message will get buried if it isn't pinned".format(cfg.kBotName))
+        reason="The `@{}` release notes message will get buried if it isn't pinned".format(cfg.cBotName))
 
     # Handle instructional pinned message
     amongUsRoleMessageText = \
@@ -299,7 +311,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     else:
       await dlog.info(self, ctx, 'Pinning `@{}` instructional message'.format(cfg.cAmongUsRoleName))
       await amongUsRoleMessage.pin(\
-        reason="The `@{}` instructional message needs to be very visible to be useful".format(cfg.kBotName))
+        reason="The `@{}` instructional message needs to be very visible to be useful".format(cfg.cBotName))
 
     await dlog.info(self, ctx, "{} started.".format(__name__))
 

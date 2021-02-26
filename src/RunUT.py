@@ -1,51 +1,76 @@
 # Modules
 import asyncio
+import discord
+import threading
 import time
 import unittest as ut
 
+from discord.ext import commands
+from inspect import currentframe, getframeinfo
+
 # notk-bot
 import Logging as log
+import TestExceptions as te
+import UtilClient
 
-import UtilBot
+from Config import cfg
+from GuildBotManager import bot
 
-cMaxJoinTimeDefault = 10
+class TestConfig:
+  def __init__(self):
+    self.cAmongUsRoleName = "among-us{}".format(cfg.cUniversalSuffix)
+    self.cBotChannelName = "notk-bot{}".format(cfg.cUniversalSuffix)
+    self.cLogChannelName = "notk-bot{}-log".format(cfg.cUniversalSuffix)
+    self.cChannelNames = [ self.cBotChannelName, self.cLogChannelName ]
+    self.cRoleNames = [ self.cAmongUsRoleName ]
 
-async def runBot():
-  # TODO show output based on command-line parameters passed to UT
-  return await asyncio.create_subprocess_exec("python3", "main.py")
-    # stdout=asyncio.subprocess.PIPE,
-    # stderr=asyncio.subprocess.PIPE)
+kCfg = TestConfig()
 
-async def runUtilBot(*args):
-  # TODO show output based on command-line parameters passed to UT
-  cmd = "python3 RunUtilBot.py {}".format(" ".join(args))
-  testBot = await asyncio.create_subprocess_shell(cmd)
-  await testBot.wait()
+def combineNames(ls):
+  names = []
+  for entry in ls:
+    names.append(entry.name)
+  return names
 
-def resetGuild():
-  asyncio.set_event_loop(asyncio.new_event_loop())
-  asyncio.run(runUtilBot(UtilBot.cCommandReset))
-  time.sleep(3) # TODO figure out why a wait is necessary
+def verifyClean(test):
+  log.info("Verifying clean state")
+  test.assertTrue(all(name not in combineNames(test.client.client.guilds[0].channels) for name in kCfg.cChannelNames))
+  test.assertTrue(all(name not in combineNames(test.client.client.guilds[0].roles) for name in kCfg.cRoleNames))
+
+def verifySetup(test):
+  log.info("Verifying existence of roles and channels")
+  test.assertTrue(all(name in combineNames(test.client.client.guilds[0].channels) for name in kCfg.cChannelNames))
+  test.assertTrue(all(name in combineNames(test.client.client.guilds[0].roles) for name in kCfg.cRoleNames))
+
+def RunSetup(bot):
+  bot.SetupGuilds()
 
 class NotkTest(ut.TestCase):
 
   def setUp(self):
-    print("") # newline
-    resetGuild()
-    asyncio.set_event_loop(asyncio.new_event_loop())
-    self.bot = asyncio.run(runBot())
-    time.sleep(5)
+    self.loop = asyncio.get_event_loop()
+    self.client = UtilClient.UtilClient(discord.Client(), self.loop)
+    self.client.Run()
+    self.client.WaitUntilReady()
+    self.client.OnReady()
+    self.client.ResetGuild(kCfg)
+    self.bot = bot
+    self.bot.Run()
+    self.bot.WaitUntilReady()
+    self.bot.OnReady()
+    self.bot.StartGuildBots()
 
   def tearDown(self):
-    try:
-      self.bot.kill()
-    except:
-      pass
-    resetGuild()
+    self.bot.Close()
+    self.client.ResetGuild(kCfg)
+    verifyClean(self)
+    self.client.Close()
+    self.loop.stop()
 
-  def testStartLog(self):
-    myvar = 0
-    # TODO Test that the relevant messages, channels, roles, etc. were created in a timed out loop
+  def testSetup(self):
+    verifyClean(self)
+    RunSetup(self.bot)
+    verifySetup(self)
 
 if __name__ == '__main__':
     ut.main()

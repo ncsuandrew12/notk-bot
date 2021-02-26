@@ -17,18 +17,16 @@ class Config:
 
     cCommandRoot = "au" # Must match the @bot.commmand() function name
 
-    self.kBotName = "notk-bot"
-
     with open(configFilename) as file:
       config = json.load(file)
 
-    unviersalSuffix = config["universalSuffix"]
+    self.cUniversalSuffix = config["universalSuffix"]
     secretsFile = "cfg/" + config["secretFile"]
 
-    self.kBotName += "{}".format(unviersalSuffix)
+    self.cBotName = "notk-bot{}".format(self.cUniversalSuffix)
 
-    self.cAmongUsRoleName = "among-us{}".format(unviersalSuffix)
-    self.cBotChannelName = self.kBotName
+    self.cAmongUsRoleName = "among-us{}".format(self.cUniversalSuffix)
+    self.cBotChannelName = self.cBotName
     self.cLogChannelName = "{}-log".format(self.cBotChannelName)
 
     self.cCommandPrefix=config["commandPrefix"]
