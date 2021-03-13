@@ -1,5 +1,9 @@
 {
-  "commandPrefix": "$",
-  "universalSuffix": "",
-  "secretFile": "secrets.json"
+  "secretFile": "secrets.json",
+  "database": {
+    "host": "127.0.0.1",
+    "port": "3306",
+    "user": "u428_091q6Dp5sS",
+    "name": "s428_notk-bot"
+  }
 }

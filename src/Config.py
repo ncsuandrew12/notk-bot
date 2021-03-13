@@ -1,8 +1,10 @@
 # Modules
+import getpass
 import json
 import os
 
 # notk-bot
+import Error
 
 class Config:
   def __init__(self, configFilename):
@@ -15,13 +17,40 @@ class Config:
     self.cRoleModPrefix = "mod"
     self.cRoleModSubstring = "moderator"
 
-    cCommandRoot = "au" # Must match the @bot.commmand() function name
+    self.cUniversalSuffix = ""
+    secretsFile = "cfg/secrets.json"
+    self.cCommandPrefix="$"
+
+    self.cDbHost = "localhost"
+    self.cDbUser = getpass.getuser()
+    self.cDbPort = 3306
+    self.cDbName = "notkBot"
 
     with open(configFilename) as file:
       config = json.load(file)
 
-    self.cUniversalSuffix = config["universalSuffix"]
-    secretsFile = "cfg/" + config["secretFile"]
+    for cfgKey in config:
+      if cfgKey == "universalSuffix":
+        self.cUniversalSuffix = config[cfgKey]
+      elif cfgKey == "secretFile":
+        secretsFile = "cfg/" + config[cfgKey]
+      elif cfgKey == "commandPrefix":
+        self.cCommandPrefix=config[cfgKey]
+      elif cfgKey == "database":
+        databaseCfg = config[cfgKey]
+        for dbKey in databaseCfg:
+          if dbKey == "host":
+            self.cDbHost = databaseCfg[dbKey]
+          elif dbKey == "port":
+            self.cDbPort = int(databaseCfg[dbKey])
+          elif dbKey == "user":
+            self.cDbUser = databaseCfg[dbKey]
+          elif dbKey == "name":
+            self.cDbName = databaseCfg[dbKey]
+          elif dbKey == "nameSuffix":
+            dbNameSuffix = databaseCfg[dbKey]
+
+    self.cDbName += dbNameSuffix
 
     self.cBotName = "notk-bot{}".format(self.cUniversalSuffix)
 
@@ -29,8 +58,7 @@ class Config:
     self.cBotChannelName = self.cBotName
     self.cLogChannelName = "{}-log".format(self.cBotChannelName)
 
-    self.cCommandPrefix=config["commandPrefix"]
-
+    cCommandRoot = "au" # Must match the @bot.commmand() function name
     cCommandBase = "{}{}".format(self.cCommandPrefix, cCommandRoot)
 
     self.cAmongUsJoinRequestMessageText = "{} {}".format(cCommandBase, self.cCommandJoin)
@@ -40,18 +68,14 @@ class Config:
         cCommandBase,\
         self.cCommandNewGame)
 
-    try:
-      tokenFile = open(secretsFile, 'r')
-      secrets = json.load(tokenFile)
-      self.cToken = secrets["token"]
-    except:
-      print("ERROR: Could not read token from file: '{}'".format(secretsFile))
-      raise
-    finally:
-      tokenFile.close()
+    with open(secretsFile) as file:
+      secrets = json.load(file)
+
+    self.cToken = secrets["token"]
+    self.cDbPassword = secrets["dbPassword"]
 
     if not self.cToken:
-      raise Exception("Discord API token could not be found")
+      raise Error.NotKException("Discord API token could not be found")
 
 cfgFile = 'cfg/config.json'
 

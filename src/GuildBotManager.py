@@ -9,22 +9,33 @@ from inspect import currentframe, getframeinfo
 # notk-bot
 import Error
 import Logging as log
+import Util
 
 from Config import cfg
+from Database import Database
 from GuildBot import GuildBot
 from Exceptions import MinorException
 from Exceptions import NotkException
 
+# Needed to be able to list members (for mapping member name arguments to actual members)
+kIntents = discord.Intents.default()
+kIntents.members = True
+
+discordBot = commands.Bot(command_prefix=cfg.cCommandPrefix, intents=kIntents)
+
 class GuildBotManager:
-  def __init__(self, bot, loop, token):
-    self.bot = bot
+  def __init__(self, loop, token):
     self.token = token
     self.loop = loop
+    self.database = Database(self.loop)
 
   def Run(self):
     log.info("Starting up")
+    self.database.Connect()
+    self.database.Setup()
+    self.database.StartBot()
     self.guildBots = {}
-    self.loop.create_task(self.bot.start(self.token))
+    self.loop.create_task(discordBot.start(self.token))
 
   def RunForever(self):
     try:
@@ -33,6 +44,7 @@ class GuildBotManager:
       self.OnReady()
       self.StartGuildBots()
       self.SetupGuilds()
+      self.database.BotStarted()
       self.loop.run_forever()
     except Exception as e:
       log.err("Error while running bot: {}".format(e))
@@ -45,29 +57,37 @@ class GuildBotManager:
 
   def Close(self):
     log.debug("Shutting down")
-    self.loop.run_until_complete(self.bot.logout()) #close?
+    self.database.ShutdownBot()
+    self.loop.run_until_complete(discordBot.close())
+    discordBot.clear()
+    self.guildBots = {}
+    log.debug("Shut down")
 
   def WaitUntilReady(self):
-    self.loop.run_until_complete(self.bot.wait_until_ready())
+    log.info("Waiting until ready")
+    self.loop.run_until_complete(discordBot.wait_until_ready())
     log.info("Bot is ready")
 
   def OnReady(self):
-    for guild in self.bot.guilds:
-      guildBot = GuildBot(self.bot, guild, self.loop)
+    for guild in discordBot.guilds:
+      guildBot = GuildBot(discordBot, guild, self.loop)
       self.guildBots[guild.id] = guildBot
 
   def StartGuildBots(self):
-    log.debug("Starting {} {}".format(len(self.bot.guilds), GuildBot.__name__))
+    log.debug("Starting {} {}".format(len(discordBot.guilds), GuildBot.__name__))
 
-    for guild in self.bot.guilds:
-      self.loop.run_until_complete(self.guildBots[guild.id].startup())
+    tasks = []
+    for guild in discordBot.guilds:
+      tasks.append(self.loop.create_task(self.guildBots[guild.id].startup()))
+
+    Util.WaitForTasks(self.loop, tasks)
 
     log.debug("{} {} running".format(len(self.guildBots), GuildBot.__name__))
 
   def SetupGuilds(self):
-    log.debug("Setting up {} guilds".format(len(self.bot.guilds)))
+    log.debug("Setting up {} guilds".format(len(discordBot.guilds)))
 
-    for guild in self.bot.guilds:
+    for guild in discordBot.guilds:
       self.loop.run_until_complete(self.guildBots[guild.id].setup())
 
     log.debug("{} guilds set up".format(len(self.guildBots)))
@@ -88,13 +108,8 @@ class GuildBotManager:
     except:
       raise
 
-# Needed to be able to list members (for mapping member name arguments to actual members)
-kIntents = discord.Intents.default()
-kIntents.members = True
-
-discordBot = commands.Bot(command_prefix=cfg.cCommandPrefix, intents=kIntents)
-bot = GuildBotManager(discordBot, asyncio.get_event_loop(), cfg.cToken)
+notkBot = GuildBotManager(asyncio.get_event_loop(), cfg.cToken)
 
 @discordBot.command()
 async def au(ctx, cmd, *args):
-  await bot.Command(ctx, cmd, *args)
+  await notkBot.Command(ctx, cmd, *args)

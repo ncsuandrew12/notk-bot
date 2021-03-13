@@ -1,6 +1,6 @@
 # Modules
 
 # notk-bot
-from GuildBotManager import bot
+from GuildBotManager import notkBot
 
-bot.RunForever()
+notkBot.RunForever()
