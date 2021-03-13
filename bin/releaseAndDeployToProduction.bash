@@ -15,11 +15,11 @@ while (( "$#" )); do
             ;;
         -*|--*=) # unsupported flags
             >&2 echo "ERROR: Unsupported parameter $1"
-            exit 1
+            exit $ERR_BAD_PARAMETER
             ;;
         *) # preserve positional arguments
             >&2 echo "ERROR: Unexpected argument $1"
-            exit 2
+            exit $ERR_BAD_ARGUMENT
             ;;
     esac
 done

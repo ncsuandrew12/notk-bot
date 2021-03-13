@@ -6,10 +6,13 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "${DIR}/common.bash"
 
+ERR_NOT_READY=10
+ERR_RELEASE_CANCELLED=11
+
 cd "${ROOT_DIR}"
 
 dryRun=0
-majorRelease=0
+majorRelease=-1
 
 version=""
 
@@ -20,8 +23,12 @@ while (( "$#" )); do
             dryRun=1
             shift
             ;;
-        -m|--major-release)
+        --major-release)
             majorRelease=1
+            shift
+            ;;
+        --minor-release)
+            majorRelease=0
             shift
             ;;
         # -e|--version)
@@ -30,19 +37,19 @@ while (( "$#" )); do
         #     shift 2
         #     else
         #     >&2 echo "ERROR: Argument for $1 is missing"
-        #     exit 1
+        #     exit $ERR_BAD_ARGUMENT
         #     fi
         #     ;;
         -*|--*=) # unsupported flags
             >&2 echo "ERROR: Unsupported parameter $1"
-            exit 1
+            exit $ERR_BAD_PARAMETER
             ;;
         *) # preserve positional arguments
             if [ $argCnt -eq 0 ]; then
                 version="$1"
             else
                 >&2 echo "ERROR: Unexpected argument $1"
-                exit 2
+                exit $ERR_BAD_ARGUMENT
             fi
             $((argCnt+1))
             shift
@@ -50,10 +57,15 @@ while (( "$#" )); do
     esac
 done
 
+if [ $majorRelease -eq -1 ]; then
+    >&2 echo "ERROR: Major/minor not specified"
+    exit $ERR_MISSING_PARAMETER
+fi
+
 if [[ `git status --short | wc -l` -ne 0 ]]; then
     >&2 echo "ERROR: Uncommitted files:"
     git status
-    exit 3
+    exit $ERR_NOT_READY
 fi
 
 if [ $dryRun -eq 0 ]; then
@@ -63,7 +75,7 @@ fi
 
 if [[ ! -f RELEASE_NOTES ]]; then
     >&2 echo "Missing release notes!"
-    exit 4
+    exit $ERR_NOT_READY
 fi
 
 major=-1
@@ -84,7 +96,7 @@ elif [ "$version" == "" ]; then
     fi
 else
     >&2 echo "ERROR: Invalid version string given: \'${version}\'"
-    exit 5
+    exit $ERR_BAD_ARGUMENT
 fi
 
 if [ $majorRelease -eq 1 ]; then
@@ -103,7 +115,7 @@ echo
 doRelease=$(tr '[:upper:]' '[:lower:]' <<< $doRelease)
 if [[ ! $doRelease =~ ^[Yy]$ ]]; then
     >&2 echo "Release cancelled!"
-    exit 6
+    exit ERR_RELEASE_CANCELLED
 fi
 if [ $dryRun -eq 0 ]; then
     echo "Creating release branch"

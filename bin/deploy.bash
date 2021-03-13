@@ -3,6 +3,8 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "${DIR}/common.bash"
 
+ERR_NOT_READY=10
+
 target=""
 
 argCnt=0
@@ -10,14 +12,14 @@ while (( "$#" )); do
     case "$1" in
         -*|--*=) # unsupported flags
             >&2 echo "ERROR: Unsupported parameter $1"
-            exit 1
+            exit $ERR_BAD_PARAMETER
             ;;
         *) # preserve positional arguments
             if [ $argCnt -eq 0 ]; then
                 target="$1"
             else
                 >&2 echo "ERROR: Unexpected argument $1"
-                exit 2
+                exit $ERR_BAD_ARGUMENT
             fi
             argCnt=$((argCnt+1))
             shift
@@ -34,7 +36,7 @@ case "$target" in
         ;;
     *)
         >&2 echo "ERROR: Invalid target: $target"
-        exit 3
+        exit $ERR_BAD_ARGUMENT
         ;;
 esac
 
@@ -45,7 +47,7 @@ tag=`git tag --points-at HEAD`
 
 if [ $production -eq 1 ] && [[ `echo "$tag" | wc -w` -eq 0 ]]; then
     >&2 echo "ERROR: The current commit is not tagged."
-    exit 4
+    exit $ERR_NOT_READY
 fi
 
 if [[ ! -e $targetDir ]]; then
