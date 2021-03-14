@@ -20,15 +20,15 @@ class TestClient:
     self.database = Database(self.loop)
 
   def Run(self):
-    log.info("Starting up")
+    log.Info("Starting up")
     self.loop.create_task(self.client.start(cfg.cToken))
 
   def WaitUntilReady(self):
     self.loop.run_until_complete(self.client.wait_until_ready())
-    log.info("Client is ready")
+    log.Info("Client is ready")
 
   def Shutdown(self):
-    log.debug("Shutting down")
+    log.Debug("Shutting down")
     self.loop.run_until_complete(self.client.logout()) #close?
 
   def FetchChannels(self):
@@ -52,13 +52,13 @@ class TestClient:
   def DeleteByName(self, objects, names):
     for obj in objects:
       if obj.name in names:
-        log.info("Deleting {}".format(obj.name))
+        log.Info("Deleting {}".format(obj.name))
         self.loop.run_until_complete(obj.delete())
 
   def ResetGuild(self,):
-    log.info("Resetting guild")
+    log.Info("Resetting guild")
     # Do this instead of looping on DeleteChannel for efficiency
     self.DeleteChannels(testCfg.cChannelNames)
     self.DeleteRoles(testCfg.cRoleNames)
-    log.info("Guild reset")
+    log.Info("Guild reset")
     # TODO Delete all messages by the client.

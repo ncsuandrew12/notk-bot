@@ -25,17 +25,17 @@ class Database:
     self.cursor = self.connection.cursor(buffered=True)
 
   def Execute(self, sqlStatement, sqlParams=None):
-    # log.debug("Executing SQL statement: {}".format(sqlStatement))
+    # log.Debug("Executing SQL statement: {}".format(sqlStatement))
     sqlIter = self.cursor.execute(sqlStatement, sqlParams)
-    # log.debug("Previous SQL statement returned {} rows".format(self.cursor.rowcount))
+    # log.Debug("Previous SQL statement returned {} rows".format(self.cursor.rowcount))
     warnings = self.cursor.fetchwarnings()
     if bool(warnings):
-      log.warn("SQL statement returned {} warnings: {}{}".format(
+      log.Warn("SQL statement returned {} warnings: {}{}".format(
         len(warnings),
         sqlStatement,
         "; params: {}".format(sqlParams) if bool(sqlParams) else ""))
       for warning in warnings:
-        log.warn("{}".format(warning))
+        log.Warn("{}".format(warning))
     return sqlIter
 
   def Clear(self):
@@ -52,7 +52,7 @@ class Database:
       if self.cursor.rowcount < 1:
         self.Execute("INSERT INTO botStatus VALUES(%(botID)s, 'STARTING')", sqlParams)
         if self.cursor.rowcount < 1:
-          Error.err("Unexpected bot status insert failure")
+          Error.Err("Unexpected bot status insert failure")
 
   def BotStarted(self, botID):
     sqlParams = { "botID" : botID }
@@ -60,17 +60,17 @@ class Database:
     if self.cursor.rowcount > 0:
       self.Execute("UPDATE botStatus SET status = 'RUNNING' WHERE id=%(botID)s", sqlParams)
       if self.cursor.rowcount < 1:
-        Error.err("Unexpected bot status update failure")
+        Error.Err("Unexpected bot status update failure")
     else:
       self.Execute("SELECT * FROM botStatus WHERE id = %(botID)s AND status = 'RUNNING'", sqlParams)
       if self.cursor.rowcount < 1:
         self.Execute("INSERT INTO botStatus VALUES(%(botID)s, 'RUNNING')", sqlParams)
         if self.cursor.rowcount < 1:
-          Error.err("Unexpected bot status insert failure")
+          Error.Err("Unexpected bot status insert failure")
 
   def ShutdownBot(self, botID):
     sqlParams = { "botID" : botID }
-    self.Execute("UPDATE botStatus SET status = 'OFFLINE' WHERE id=1")
+    self.Execute("UPDATE botStatus SET status = 'OFFLINE' WHERE id=%(botID)s", sqlParams)
     return self.cursor.rowcount < 1
 
   def GetBotStatus(self, botID):
@@ -83,8 +83,9 @@ class Database:
       elif self.cursor.rowcount == 0:
         return "OFFLINE"
       else:
-        Error.err("Unexpected SQL result while querying bot status")
+        Error.Err("Unexpected SQL result while querying bot status")
     status = task()
+    log.Debug("Returning status for bot {}: {}".format(botID, status))
     return status
 
 

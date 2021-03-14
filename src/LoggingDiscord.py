@@ -3,28 +3,28 @@
 # notk-bot
 import Logging as log
 
-async def dLog(guildBot, ctx, lvl, msg):
-  sLog(ctx, lvl, msg)
+async def DLog(guildBot, ctx, lvl, msg):
+  SLog(ctx, lvl, msg)
   if bool(guildBot.channelLog):
     await guildBot.channelLog.send(content="{}: {}: {}".format(lvl, ctx.author.name, msg))
 
-async def err(guildBot, ctx, msg):
-  await logSevere(guildBot, ctx, "ERROR", msg)
+async def Err(guildBot, ctx, msg):
+  await SLogSevere(guildBot, ctx, "ERROR", msg)
 
-async def warn(guildBot, ctx, msg):
-  await logSevere(guildBot, ctx, "WARNING", msg)
+async def Warn(guildBot, ctx, msg):
+  await SLogSevere(guildBot, ctx, "WARNING", msg)
 
-async def info(guildBot, ctx, msg):
-  await dLog(guildBot, ctx, "INFO", msg)
+async def Info(guildBot, ctx, msg):
+  await DLog(guildBot, ctx, "INFO", msg)
 
-def debug(ctx, msg):
-  sDebug(ctx, msg)
+def Debug(ctx, msg):
+  SDebug(ctx, msg)
 
-def sLog(ctx, lvl, msg):
-  log.log(lvl, "{}.{}: {}".format(ctx.guild.name, ctx.author.name, msg))
+def SLog(ctx, lvl, msg):
+  log.Log(lvl, "{}.{}: {}".format(ctx.guild.name, ctx.author.name, msg))
 
-async def logSevere(guildBot, ctx, lvl, msg):
-  sLog(ctx, lvl, msg)
+async def SLogSevere(guildBot, ctx, lvl, msg):
+  SLog(ctx, lvl, msg)
   if bool(guildBot.channelLog):
     await guildBot.channelLog.send(\
       content="{}: {}: {}".format(\
@@ -34,14 +34,14 @@ async def logSevere(guildBot, ctx, lvl, msg):
   elif not ctx.author.bot:
     await ctx.author.send(msg)
 
-def sErr(ctx, msg):
-  sLog(ctx, "ERROR", msg)
+def SErr(ctx, msg):
+  SLog(ctx, "ERROR", msg)
 
-def sWarn(ctx, msg):
-  sLog(ctx, "WARNING", msg)
+def SWarn(ctx, msg):
+  SLog(ctx, "WARNING", msg)
 
-def sInfo(ctx, msg):
-  sLog(ctx, "INFO", msg)
+def SInfo(ctx, msg):
+  SLog(ctx, "INFO", msg)
 
-def sDebug(ctx, msg):
-  sLog(ctx, "DEBUG", msg)
+def SDebug(ctx, msg):
+  SLog(ctx, "DEBUG", msg)

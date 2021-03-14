@@ -36,3 +36,4 @@ Technical/development TODOs:
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Generalize RoleEnroller
 -Logging library
+-Detect when an important role/channel has been deleted and handle robustly

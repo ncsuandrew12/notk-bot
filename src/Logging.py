@@ -5,7 +5,7 @@ import re
 # notk-bot
 from Config import cfg
 
-def log(lvl, msg):
+def Log(lvl, msg):
   frame = inspect.currentframe()
   while (re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename).startswith("Logging")):
     frame = frame.f_back
@@ -20,14 +20,14 @@ def log(lvl, msg):
     frame.f_code.co_name,\
     msg))
 
-def err(msg):
-  log("ERROR", msg)
+def Err(msg):
+  Log("ERROR", msg)
 
-def warn(msg):
-  log("WARNING", msg)
+def Warn(msg):
+  Log("WARNING", msg)
 
-def info(msg):
-  log("INFO", msg)
+def Info(msg):
+  Log("INFO", msg)
 
-def debug(msg):
-  log("DEBUG", msg)
+def Debug(msg):
+  Log("DEBUG", msg)
