@@ -26,7 +26,7 @@ class GuildBot:
   def GetBotChannels(self):
     channels = []
     for channel in self.guild.channels:
-      if channel.name in [ cfg.cBotChannelName, cfg.cLogChannelName]:
+      if channel.name in [ cfg.cBotChannelName, cfg.cLogChannelName ]:
         channels.append(channel)
     return channels
 

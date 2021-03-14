@@ -32,11 +32,13 @@ async def RunBot():
     # stdout=asyncio.subprocess.PIPE,
     # stderr=asyncio.subprocess.PIPE)
 
-class NotkTest(ut.TestCase):
+class Startup(ut.TestCase):
 
   def setUp(self):
     self.bot = None
-    self.loop = asyncio.get_event_loop()
+    # self.loop = asyncio.get_event_loop()
+    self.loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(self.loop)
     self.client = TestClient.TestClient(discord.Client(), self.loop)
     self.client.database.Connect()
     self.client.database.Clear()
@@ -51,21 +53,10 @@ class NotkTest(ut.TestCase):
       # TODO Log a warning if-and-only-if the bot wasn't already killed by the test
       pass
 
-    # self.client.database.Clear()
+    self.client.database.Clear()
     self.client.ResetGuild()
-    self.VerifyClean()
     self.client.Shutdown()
     self.loop.stop()
-
-  def VerifyClean(self):
-    log.Info("Verifying clean state")
-    self.assertTrue(all(name not in CombineNames(self.client.FetchChannels()) for name in testCfg.cChannelNames))
-    self.assertTrue(all(name not in CombineNames(self.client.FetchRoles()) for name in testCfg.cRoleNames))
-
-  def VerifySetup(self):
-    log.Info("Verifying existence of roles and channels")
-    self.assertTrue(all(name in CombineNames(self.client.FetchChannels()) for name in testCfg.cChannelNames))
-    self.assertTrue(all(name in CombineNames(self.client.FetchRoles()) for name in testCfg.cRoleNames))
 
   def RunAndWaitForBot(self):
     assert not self.bot
@@ -86,6 +77,13 @@ class NotkTest(ut.TestCase):
       time.sleep(10)
       waited+= 10
 
+  def ShutdownBot(self):
+    if self.bot:
+      # TODO Instead of killing the process, signal to the bot that it should shutdown. Also, remove the manual DB manipulation
+      self.KillBot()
+      self.WaitForBotShutdown()
+      self.bot = None
+
   def KillBot(self):
     if self.bot:
       self.bot.kill()
@@ -97,13 +95,6 @@ class NotkTest(ut.TestCase):
           Error.Err("Failed to update {}'s bot status (shutdown)".format(self.client.client.guilds[0].name))
       self.bot = None
 
-  def ShutdownBot(self):
-    if self.bot:
-      # TODO Instead of killing the process, signal to the bot that it should shutdown. Also, remove the manual DB manipulation
-      self.KillBot()
-      self.WaitForBotShutdown()
-      self.bot = None
-
   def WaitForBotShutdown(self):
     waited = 0
     while self.client.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
@@ -112,19 +103,67 @@ class NotkTest(ut.TestCase):
       time.sleep(1)
       waited += 1
 
-  def testSetup(self):
-    log.Info("Testing virgin setup")
-    self.VerifyClean()
+  def StartupVerify(self):
     self.RunAndWaitForBot()
     self.VerifySetup()
+
+  def StartupVerifyShutdown(self):
+    self.StartupVerify()
     self.ShutdownBot()
+
+  def VerifyClean(self):
+    log.Info("Verifying clean state")
+    self.assertTrue(all(name not in CombineNames(self.client.FetchChannels()) for name in testCfg.cChannelNames))
+    self.assertTrue(all(name not in CombineNames(self.client.FetchRoles()) for name in testCfg.cRoleNames))
+
+  def VerifySetup(self):
+    log.Info("Verifying existence of all channels")
+    self.assertTrue(all(name in CombineNames(self.client.FetchChannels()) for name in testCfg.cChannelNames))
+    log.Info("Verifying existence of all roles")
+    self.assertTrue(all(name in CombineNames(self.client.FetchRoles()) for name in testCfg.cRoleNames))
+
+  def testStartup(self):
+    self.TestStartupVirgin()
+    self.TestStartupMissingChannels()
+    self.TestStartupMissingRoles()
+    self.TestStartupExistingChannels()
+
+  def TestStartupVirgin(self):
+    log.Info("Testing virgin startup")
+    self.VerifyClean()
+    self.StartupVerifyShutdown()
+
+  def TestStartupMissingChannels(self):
     for channelName in [ testCfg.cBotChannelName, testCfg.cLogChannelName ]:
       log.Info("Testing startup with missing `#{}`".format(channelName))
       self.client.DeleteChannel(channelName)
-      log.Info("Starting bot")
-      self.RunAndWaitForBot()
-      self.VerifySetup()
-      self.ShutdownBot()
+      self.StartupVerifyShutdown()
+
+  def TestStartupMissingRoles(self):
+    for roleName in [ testCfg.cAmongUsRoleName ]:
+      log.Info("Testing startup with missing `@{}`".format(roleName))
+      self.client.DeleteRole(roleName)
+      self.StartupVerifyShutdown()
+
+  def TestStartupExistingChannels(self):
+    log.Info("Testing startup with existing channels")
+    channelNames = [ testCfg.cBotChannelName, testCfg.cLogChannelName ]
+    channels = {}
+    oldMessages = {}
+    for channel in self.client.client.guilds[0].channels:
+      if channel.name in channelNames:
+        channels[channel.name] = channel
+        oldMessages[channel.name] = self.loop.run_until_complete(channel.send(content="test message"))
+    self.assertEqual(len(channelNames), len(channels))
+    self.assertEqual(len(channelNames), len(oldMessages))
+    self.StartupVerify()
+    for channelName in oldMessages:
+      log.Info("Testing that `#{}`'s messages were preserved".format(channelName))
+      self.loop.run_until_complete(channels[channelName].fetch_message(oldMessages[channelName].id))
+      # Reaching here means the message was preserved
+    self.ShutdownBot()
 
 if __name__ == '__main__':
-    ut.main()
+  self.startup()
+  ut.main()
+  self.tearDown()
