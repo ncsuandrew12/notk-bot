@@ -13,8 +13,9 @@ from DiscordFacsimilies import AuthorStubbed
 from DiscordFacsimilies import ContextStubbed
 
 class GuildBot:
-  def __init__(self, bot, guild, loop):
+  def __init__(self, bot, guild, loop, database):
     self.bot = bot
+    self.database = database
     self.guild = guild
     self.loop = loop
     self.channelBot = None
@@ -38,6 +39,8 @@ class GuildBot:
     return roles
 
   async def startup(self):
+    self.database.StartBot(self.guild.id)
+
     ctx = ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
 
     dlog.debug(ctx, "Starting {} (before channel located)".format(__name__))
@@ -132,8 +135,6 @@ class GuildBot:
         reason="Need a place to put logs")
       self.botChannels.append(self.channelLog)
       await dlog.info(self, ctx, 'Created {} log channel: `#{}`'.format(self.bot.user.mention, self.channelLog.mention))
-
-    dlog.sInfo(ctx, "Starting {}".format(__name__))
 
     # TODO delete
     # for role in ctx.guild.roles:
@@ -313,7 +314,13 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
       await amongUsRoleMessage.pin(\
         reason="The `@{}` instructional message needs to be very visible to be useful".format(cfg.cBotName))
 
+    self.database.BotStarted(self.guild.id)
+
     await dlog.info(self, ctx, "{} started.".format(__name__))
+
+  async def Shutdown(self):
+    dlog.sInfo(ctx, "Shutting down.")
+    return self.database.ShutdownBot(self.guild.id)
 
   async def Command(self, ctx, cmd, *args):
     dlog.debug(ctx, "Processing command: `{} {}`".format(cmd, " ".join(args)))

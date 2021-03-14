@@ -33,7 +33,6 @@ class GuildBotManager:
     log.info("Starting up")
     self.database.Connect()
     self.database.Setup()
-    self.database.StartBot()
     self.guildBots = {}
     self.loop.create_task(discordBot.start(self.token))
 
@@ -43,8 +42,7 @@ class GuildBotManager:
       self.WaitUntilReady()
       self.OnReady()
       self.StartGuildBots()
-      self.SetupGuilds()
-      self.database.BotStarted()
+      self.SetupGuildBots()
       self.loop.run_forever()
     except Exception as e:
       log.err("Error while running bot: {}".format(e))
@@ -53,15 +51,38 @@ class GuildBotManager:
       log.err("Error while running bot!")
       raise
     finally:
-      self.loop.close()
+      self.Shutdown()
 
-  def Close(self):
+  def Shutdown(self):
     log.debug("Shutting down")
-    self.database.ShutdownBot()
-    self.loop.run_until_complete(discordBot.close())
-    discordBot.clear()
+
+    for guild in discordBot.guilds:
+      try:
+        shutdown = False
+        tasks.append(self.loop.run_until_complete(shutdown = self.guildBots[guild.id].Shutdown()))
+        if not shutdown:
+          Error.err("Failed to update {}'s status (shutdown)".format(guild.name))
+      except Exception as e:
+        log.err("Error while shutting down {}'s bot: {}".format(guild.name, e))
+      except:
+        log.err("Error while shutting down {}'s bot!".format(guild.name))
+
+    try:
+      self.loop.run_until_complete(discordBot.close())
+      discordBot.clear()
+    except Exception as e:
+      log.err("Error while closing Discord command Bot: {}".format(e))
+    except:
+      log.err("Error while closing Discord command Bot!")
+
     self.guildBots = {}
-    log.debug("Shut down")
+
+    try:
+      self.loop.close()
+    except Exception as e:
+      log.err("Error while closing loop: {}".format(e))
+    except:
+      log.err("Error while closing loop!")
 
   def WaitUntilReady(self):
     log.info("Waiting until ready")
@@ -70,7 +91,7 @@ class GuildBotManager:
 
   def OnReady(self):
     for guild in discordBot.guilds:
-      guildBot = GuildBot(discordBot, guild, self.loop)
+      guildBot = GuildBot(discordBot, guild, self.loop, self.database)
       self.guildBots[guild.id] = guildBot
 
   def StartGuildBots(self):
@@ -84,7 +105,7 @@ class GuildBotManager:
 
     log.debug("{} {} running".format(len(self.guildBots), GuildBot.__name__))
 
-  def SetupGuilds(self):
+  def SetupGuildBots(self):
     log.debug("Setting up {} guilds".format(len(discordBot.guilds)))
 
     for guild in discordBot.guilds:

@@ -27,7 +27,7 @@ class TestClient:
     self.loop.run_until_complete(self.client.wait_until_ready())
     log.info("Client is ready")
 
-  def Close(self):
+  def Shutdown(self):
     log.debug("Shutting down")
     self.loop.run_until_complete(self.client.logout()) #close?
 

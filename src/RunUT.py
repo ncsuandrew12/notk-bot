@@ -31,14 +31,10 @@ async def runBot():
     # stdout=asyncio.subprocess.PIPE,
     # stderr=asyncio.subprocess.PIPE)
 
-
-# def WaitForShutdown(database):
-#   while database.GetBotStatus() != "OFFLINE":
-#     time.sleep(1)
-
 class NotkTest(ut.TestCase):
 
   def setUp(self):
+    self.bot = None
     self.loop = asyncio.get_event_loop()
     self.client = TestClient.TestClient(discord.Client(), self.loop)
     self.client.database.Connect()
@@ -49,14 +45,15 @@ class NotkTest(ut.TestCase):
 
   def tearDown(self):
     try:
-      self.bot.kill()
+      self.KillBot()
     except:
+      # TODO Log a warning if-and-only-if the bot wasn't already killed by the test
       pass
 
     # self.client.database.Clear()
     self.client.ResetGuild()
     self.verifyClean()
-    self.client.Close()
+    self.client.Shutdown()
     self.loop.stop()
 
   def testSetup(self):
@@ -67,17 +64,22 @@ class NotkTest(ut.TestCase):
     for channelName in [ testCfg.cBotChannelName, testCfg.cLogChannelName ]:
       self.client.DeleteChannel(channelName)
       self.RunAndWaitForBot()
+      self.KillBot()
 
   def RunAndWaitForBot(self):
+    assert not self.bot
     self.bot = asyncio.run(runBot())
     self.WaitForBot()
 
   def KillBot(self):
+    # TODO Instead of killing the process, signal to the bot that it should shutdown
     self.bot.kill()
     time.sleep(2)
     # Since we killed the bot, we need to manually update the status in the DB to prevent us from detecting the bot as
     # 'Running' too early when we next start it.
-    self.client.database.ShutdownBot()
+    if not self.client.database.ShutdownBot(self.client.client.guilds[0].id):
+      Error.err("Failed to update {}'s bot status (shutdown)".format(self.client.client.guilds[0].name))
+    self.bot = None
 
   def verifyClean(self):
     log.info("Verifying clean state")
@@ -92,12 +94,20 @@ class NotkTest(ut.TestCase):
   def WaitForBot(self):
     while True:
       try:
-        if self.client.database.GetBotStatus() == "RUNNING":
+        if self.client.database.GetBotStatus(self.client.client.guilds[0].id) == "RUNNING":
           break
       except Exception as e:
         log.debug("{}".format(e))
       log.info("Wating for bot to come online")
       time.sleep(10)
+
+  # def WaitForBotShutdown():
+  #   waited = 0
+  #   while self.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
+  #     if waited > 20:
+  #       Error.err("Timed out while waiting for {}'s bot to shutdown.".format(self.client.client.guilds[0].name))
+  #     time.sleep(1)
+  #     waited += 1
 
 if __name__ == '__main__':
     ut.main()
