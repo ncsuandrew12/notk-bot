@@ -37,6 +37,26 @@ class TestClient:
   def FetchRoles(self):
     return self.loop.run_until_complete(self.client.guilds[0].fetch_roles())
 
+  async def FetchMessageHistoryAndFlattenAsync(self, channel, limit=100, before=None, after=None, oldestFirst=None):
+    return await channel.history(
+      limit=limit,
+      before=before,
+      after=after,
+      oldest_first=oldestFirst).flatten()
+
+  def FetchMessageHistoryAndFlatten(self, channel, limit=100, before=None, after=None, oldestFirst=None):
+    return self.loop.run_until_complete(
+      self.FetchMessageHistoryAndFlattenAsync(
+        channel=channel,
+        limit=limit,
+        before=before,
+        after=after,
+        oldestFirst=oldestFirst
+      ))
+
+  def RemoveMemberRole(self, member, role, reason=None):
+    return self.loop.run_until_complete(member.remove_roles(role, reason=reason))
+
   def DeleteChannel(self, channelName):
     self.DeleteChannels([channelName])
 
