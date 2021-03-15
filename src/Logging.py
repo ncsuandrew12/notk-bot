@@ -1,4 +1,5 @@
 # Modules
+import datetime
 import inspect
 import re
 
@@ -11,7 +12,10 @@ def Log(lvl, msg):
     frame = frame.f_back
 
   # TODO classname
-  print("{}| {}{}:{} {}{}| {}".format(\
+    # datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo,
+  print("{} {} |{}| {}{}:{} {}{}| {}".format(\
+    datetime.datetime.now(),
+    datetime.datetime.now(datetime.timezone(datetime.timedelta(0))).astimezone().tzinfo,
     cfg.cBotName.upper(),\
     lvl + ":" + ((len("WARNING: ") - len(lvl) - 1) * " "),
     re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename),\

@@ -115,8 +115,7 @@ class GuildBotManager:
 
   async def Command(self, ctx, cmd, *args):
     try:
-      if ctx.guild.id not in\
-        self.guildBots:
+      if ctx.guild.id not in self.guildBots:
         await Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
           ctx.guild.name,
           "andrewf#6219"))

@@ -29,7 +29,7 @@ class StartupTest(ut.TestCase):
     # self.loop = asyncio.get_event_loop()
     self.loop = asyncio.new_event_loop()
     asyncio.set_event_loop(self.loop)
-    self.client = TestClient.TestClient(discord.Client(), self.loop)
+    self.client = TestClient.TestClient(self.loop)
     self.client.database.Connect()
     self.client.database.Clear()
     self.client.Run()
@@ -42,165 +42,11 @@ class StartupTest(ut.TestCase):
     except:
       # TODO Log a warning if-and-only-if the bot wasn't already killed by the test
       pass
-
-    # self.client.database.Clear()
-    # self.client.ResetGuild()
+    if self.DidTestPass():
+      self.client.database.Clear()
+      self.client.ResetGuild()
     self.client.Shutdown()
     self.loop.stop()
-
-  def RunAndWaitForBot(self):
-    assert not self.bot
-    self.botLaunchTime = datetime.utcnow()
-    self.bot = asyncio.run(tu.RunBot())
-    self.WaitForBot()
-
-  def WaitForBot(self):
-    waited = 0
-    while True:
-      if waited >= 30:
-        Error.Err("Timed out waiting for {}'s bot to come online.".format(self.client.client.guilds[0].name))
-      try:
-        if self.client.database.GetBotStatus(self.client.client.guilds[0].id) == "RUNNING":
-          break
-      except Exception as e:
-        log.Debug("{}".format(e))
-      log.Info("Waiting for bot to come online")
-      time.sleep(10)
-      waited+= 10
-
-  def ShutdownBot(self):
-    if self.bot:
-      # TODO Instead of killing the process, signal to the bot that it should shutdown. Also, remove the manual DB manipulation
-      self.KillBot()
-      self.WaitForBotShutdown()
-      self.bot = None
-
-  def KillBot(self):
-    if self.bot:
-      self.bot.kill()
-      time.sleep(2)
-      # Since we killed the bot, we need to manually update the status in the DB to prevent us from detecting the bot as
-      # 'Running' too early when we next start it.
-      if not self.client.database.ShutdownBot(self.client.client.guilds[0].id):
-        if self.client.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
-          Error.Err("Failed to update {}'s bot status (shutdown)".format(self.client.client.guilds[0].name))
-      self.bot = None
-
-  def WaitForBotShutdown(self):
-    waited = 0
-    while self.client.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
-      if waited > 20:
-        Error.Err("Timed out while waiting for {}'s bot to shutdown.".format(self.client.client.guilds[0].name))
-      time.sleep(1)
-      waited += 1
-
-  def LocateDiscordObjects(self):
-    log.Debug("Locating Discord objects.")
-    container = tu.Container()
-    container.instructionalMessage = None
-    container.releaseNotesMessage = None
-    container.rolesNameDict = tu.GetNameDict(self.client.FetchRoles())
-    container.channelsNameDict = tu.GetNameDict(self.client.FetchChannels(), testCfg.cChannelNames)
-    if testCfg.cBotChannelName in container.channelsNameDict:
-      messages = self.client.FetchMessageHistoryAndFlatten(
-        channel=container.channelsNameDict[testCfg.cBotChannelName],
-        limit=None,
-        oldestFirst=True)
-      for message in messages:
-        if message.content.startswith(testCfg.cReleaseNotesHeader):
-          container.releaseNotesMessage = message
-        if testCfg.cInstructionalLine in message.content.partition('\n')[0]:
-          container.instructionalMessage = message
-    return container
-
-  def StartupVerify(self):
-    self.RunAndWaitForBot()
-    self.VerifyStartup()
-
-  def StartupVerifyShutdown(self):
-    self.StartupVerify()
-    self.ShutdownBot()
-
-  def VerifyClean(self):
-    log.Info("Verifying clean state")
-    self.assertTrue(all(name not in tu.GetNameDict(self.client.FetchRoles()) for name in testCfg.cRoleNames))
-    self.assertTrue(all(name not in tu.GetNameDict(self.client.FetchChannels()) for name in testCfg.cChannelNames))
-
-  def VerifyStartup(self):
-    dObjs = self.LocateDiscordObjects()
-    self.VerifyAllRoles(dObjs.rolesNameDict)
-    self.VerifyAllChannels(dObjs)
-
-  def VerifyAllRoles(self, rolesNameDict):
-    log.Info("Verifying existence of all roles")
-    self.assertTrue(all(name in rolesNameDict for name in testCfg.cRoleNames))
-
-  def VerifyAllChannels(self, dObjs):
-    log.Info("Verifying existence of all channels")
-    self.assertTrue(all(name in dObjs.channelsNameDict for name in testCfg.cChannelNames))
-    self.VerifyAllChannelsContent(dObjs)
-
-  def VerifyAllChannelsContent(self, dObjs):
-    log.Info("Verifying channels' content.")
-    self.assertTrue(dObjs.releaseNotesMessage)
-    self.assertTrue(dObjs.instructionalMessage)
-    for channelName in dObjs.channelsNameDict:
-      channel = dObjs.channelsNameDict[channelName]
-      if channel.name == testCfg.cBotChannelName:
-        # TODO Verify release notes message content
-        expectedInstructionMessageContent = """⚠ notk-bot-test Instructions ⚠
-Type `!au join` in any public channel to be notified about NOTK Among Us game sessions.
-Type `!au leave` in any public channel if you no longer want to be notified.
-Type `!au newgame <room-code>` in any public channel to send a new game notification.
-Tag the `among-us-test` role to ping all Among Us players like so: <@&{}>
-I recommend muting the <#{}> channel; it is only for logging purposes and will be very noisy.""".format(
-            dObjs.rolesNameDict[testCfg.cAmongUsRoleName].id,
-            dObjs.channelsNameDict[testCfg.cLogChannelName].id)
-        if dObjs.instructionalMessage.content != expectedInstructionMessageContent:
-          log.Info(
-            "Instructional message content mismatch:\n\"\"\"{}\"\"\"\n\"\"\"{}\"\"\"".format(
-              dObjs.instructionalMessage.content,
-              expectedInstructionMessageContent))
-        self.assertEqual(dObjs.instructionalMessage.content, expectedInstructionMessageContent)
-      if channelName == testCfg.cLogChannelName:
-        log.Info("Verifying `#{}` received messages during latest startup.".format(channelName))
-        messages = self.client.FetchMessageHistoryAndFlatten(channel=channel, limit=1, after=self.botLaunchTime)
-        self.assertGreater(len(messages), 0)
-        # TODO Verify the content of the main channel's messages.
-        # TODO Verify pinned messages
-
-  def VerifyStandardRestart(self, oldObjs):
-    self.VerifyStartup()
-    self.VerifyOldRolesSurvivedRestart(oldObjs.rolesNameDict)
-    self.VerifyOldChannelsSurvivedRestart(oldObjs)
-
-  def VerifyOldRolesSurvivedRestart(self, oldRoles):
-    log.Info("Verifying roles survived the restart.")
-    self.assertTrue(oldRoles[roleName].id in tu.GetIDDict(self.client.FetchRoles()) for roleName in oldRoles)
-  
-  def VerifyOldChannelsSurvivedRestart(self, oldObjs):
-    log.Info("Verifying channels survived the restart.")
-    self.assertTrue(
-      oldObjs.channelsNameDict[channelName].id in tu.GetIDDict(self.client.FetchChannels()) \
-        for channelName in oldObjs.channelsNameDict)
-    self.VerifyOldChannelsContentSurvivedRestart(oldObjs)
-
-  def VerifyOldChannelsContentSurvivedRestart(self, oldObjs):
-    log.Info("Verifying channels' content.")
-    for channelName in testCfg.cChannelNames:
-      log.Info("Verifying `#{}`. ({})".format(channelName, self.botLaunchTime))
-      assert channelName in oldObjs.channelsNameDict
-      channel = oldObjs.channelsNameDict[channelName]
-      messages = self.client.FetchMessageHistoryAndFlatten(channel=channel, limit=1, after=self.botLaunchTime)
-      expectedNewMessageCount = 0
-      if channel.name == testCfg.cLogChannelName:
-        expectedNewMessageCount = 1
-      if len(messages) != expectedNewMessageCount:
-        log.Warn("Unexpected message count: {} != {}".format(len(messages), expectedNewMessageCount))
-        for message in messages:
-          log.Warn("Message: {}: {}".format(message.created_at, message.content))
-      assert len(messages) == expectedNewMessageCount
-      # TODO Fully verify the release notes message(s)
 
   def testStartup(self):
     self.TestVirgin()
@@ -300,3 +146,230 @@ I recommend muting the <#{}> channel; it is only for logging purposes and will b
         log.Warn("Error during cleanup: {}".format(e))
       except:
         log.Warn("Error during cleanup.")
+
+  # TODO Break this into its own test class and split the sub-tests into their own tests
+  def testCommands(self):
+    self.StartupVerify()
+    dObjs = self.LocateDiscordObjects()
+    # dObjs.testUser = self.client.FetchUser(self.client.testUserClient.user.id)
+    # TODO
+    # for member in self.client.FetchMembersAndFlatten():
+    #   log.Info("Member: {}: {}".format(member.id, member.name))
+    #   if member.id != self.client.client.user.id:
+    #     dObjs.testUser = member
+    # dObjs.testUser = self.client.client.guilds[0].members[0]
+    # self.assertTrue(dObjs.testUser)
+    self.TestAmongUsCommandJoin(dObjs)
+    # self.TestAmongUsCommandLeave(dObjs)
+    self.ShutdownBot()
+
+  def TestAmongUsCommandJoin(self, dObjs):
+    preCommandTime = datetime.utcnow()
+    log.Debug("Sending basic {} command".format(testCfg.cCommandJoin))
+    # testChannel = self.client.CreateChannel("test", "test", "testing")
+    # self.client.SendToChannel(
+    #   testChannel.id,
+    #   client=self.client.testUserClient,
+    #   content="{}{} {}".format(
+    #     testCfg.cCommandPrefix,
+    #     testCfg.cCommandRoot,
+    #     testCfg.cCommandJoin))
+    #     dObjs.testUser.mention
+    # time.sleep(45)
+    # messages = self.client.FetchMessageHistoryAndFlatten(
+    #   channel=testChannel,
+    #   limit=None,
+    #   after=preCommandTime,
+    #   oldestFirst=True)
+    # TODO Verify message response
+    # foundResponse = False
+    # for message in messages:
+    #   log.Debug("Checking message: `@{}` @{}: {}".format(message.author.name, message.created_at, message.content))
+    #   foundResponse = (message.content == "Hey `@among-us-test` players! @andrewf is now among the Among Us players!")
+    #   if (foundResponse):
+    #     break
+    # self.assertTrue(foundResponse)
+      # TODO Verify that member gained the role
+      # TODO Verify that the bot responded with an announcement
+      # TODO Verify that the user was sent a private message
+    # TODO Test when a player adds themself without tagging themself
+    # TODO Test when a player adds another player
+    # TODO Test when a player adds an invalid player
+    # TODO Test when a player adds already-added players (self/others)
+    # TODO Test all of the above for multiple other players of heterogenous statuses
+    # TODO Test all of the above in an unrelated private channel
+    # TODO Test all of the above in an unrelated public channel
+
+
+  def RunAndWaitForBot(self):
+    assert not self.bot
+    self.botLaunchTime = datetime.utcnow()
+    self.bot = asyncio.run(tu.RunBot())
+    self.WaitForBot()
+
+  def WaitForBot(self):
+    time.sleep(9)
+    waited = 9
+    while True:
+      if waited >= 30:
+        Error.Err("Timed out waiting for {}'s bot to come online.".format(self.client.client.guilds[0].name))
+      try:
+        if self.client.database.GetBotStatus(self.client.client.guilds[0].id) == "RUNNING":
+          break
+      except Exception as e:
+        log.Debug("{}".format(e))
+      log.Info("Waiting for bot to come online")
+      time.sleep(1)
+      waited+= 1
+
+  def ShutdownBot(self):
+    if self.bot:
+      # TODO Instead of killing the process, signal to the bot that it should shutdown. Also, remove the manual DB manipulation
+      self.KillBot()
+      self.WaitForBotShutdown()
+      self.bot = None
+
+  def KillBot(self):
+    if self.bot:
+      self.bot.kill()
+      time.sleep(2)
+      # Since we killed the bot, we need to manually update the status in the DB to prevent us from detecting the bot as
+      # 'Running' too early when we next start it.
+      if not self.client.database.ShutdownBot(self.client.client.guilds[0].id):
+        if self.client.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
+          Error.Err("Failed to update {}'s bot status (shutdown)".format(self.client.client.guilds[0].name))
+      self.bot = None
+
+  def WaitForBotShutdown(self):
+    waited = 0
+    while self.client.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
+      if waited > 20:
+        Error.Err("Timed out while waiting for {}'s bot to shutdown.".format(self.client.client.guilds[0].name))
+      time.sleep(1)
+      waited += 1
+
+  def LocateDiscordObjects(self):
+    log.Debug("Locating Discord objects.")
+    container = tu.Container()
+    container.instructionalMessage = None
+    container.releaseNotesMessage = None
+    container.rolesNameDict = tu.GetNameDict(self.client.FetchRoles())
+    container.channelsNameDict = tu.GetNameDict(self.client.FetchChannels(), testCfg.cChannelNames)
+    if testCfg.cBotChannelName in container.channelsNameDict:
+      messages = self.client.FetchMessageHistoryAndFlatten(
+        channel=container.channelsNameDict[testCfg.cBotChannelName],
+        limit=None,
+        oldestFirst=True)
+      for message in messages:
+        if message.content.startswith(testCfg.cReleaseNotesHeader):
+          container.releaseNotesMessage = message
+        if testCfg.cInstructionalLine in message.content.partition('\n')[0]:
+          container.instructionalMessage = message
+    return container
+
+  def StartupVerify(self):
+    self.RunAndWaitForBot()
+    self.VerifyStartup()
+
+  def StartupVerifyShutdown(self):
+    self.StartupVerify()
+    self.ShutdownBot()
+
+  def VerifyClean(self):
+    log.Info("Verifying clean state")
+    self.assertTrue(all(name not in tu.GetNameDict(self.client.FetchRoles()) for name in testCfg.cRoleNames))
+    self.assertTrue(all(name not in tu.GetNameDict(self.client.FetchChannels()) for name in testCfg.cChannelNames))
+
+  def VerifyStartup(self):
+    dObjs = self.LocateDiscordObjects()
+    self.VerifyAllRoles(dObjs.rolesNameDict)
+    self.VerifyAllChannels(dObjs)
+
+  def VerifyAllRoles(self, rolesNameDict):
+    log.Info("Verifying existence of all roles")
+    self.assertTrue(all(name in rolesNameDict for name in testCfg.cRoleNames))
+
+  def VerifyAllChannels(self, dObjs):
+    log.Info("Verifying existence of all channels")
+    self.assertTrue(all(name in dObjs.channelsNameDict for name in testCfg.cChannelNames))
+    self.VerifyAllChannelsContent(dObjs)
+
+  def VerifyAllChannelsContent(self, dObjs):
+    log.Info("Verifying channels' content.")
+    self.assertTrue(dObjs.releaseNotesMessage)
+    self.assertTrue(dObjs.instructionalMessage)
+    for channelName in dObjs.channelsNameDict:
+      channel = dObjs.channelsNameDict[channelName]
+      if channel.name == testCfg.cBotChannelName:
+        # TODO Verify release notes message content
+        expectedInstructionMessageContent = """⚠ notk-bot-test Instructions ⚠
+Type `{cmdPrefix} {cmdJoin}` in any public channel to be notified about NOTK Among Us game sessions.
+Type `{cmdPrefix} {cmdLeave}` in any public channel if you no longer want to be notified.
+Type `{cmdPrefix} {cmdNewGame} <room-code>` in any public channel to send a new game notification.
+Tag the `among-us-test` role to ping all Among Us players like so: <@&{amongUsRoleID}>
+I recommend muting the <#{logChannelID}> channel; it is only for logging purposes and will be very noisy.""".format(
+          cmdPrefix=testCfg.cCommandPrefix + testCfg.cCommandRoot,
+          cmdJoin=testCfg.cCommandJoin,
+          cmdLeave=testCfg.cCommandLeave,
+          cmdNewGame=testCfg.cCommandNewGame,
+          amongUsRoleID=dObjs.rolesNameDict[testCfg.cAmongUsRoleName].id,
+          logChannelID=dObjs.channelsNameDict[testCfg.cLogChannelName].id)
+        if dObjs.instructionalMessage.content != expectedInstructionMessageContent:
+          log.Info(
+            "Instructional message content mismatch:\n\"\"\"{}\"\"\"\n\"\"\"{}\"\"\"".format(
+              dObjs.instructionalMessage.content,
+              expectedInstructionMessageContent))
+        self.assertEqual(dObjs.instructionalMessage.content, expectedInstructionMessageContent)
+      if channelName == testCfg.cLogChannelName:
+        log.Info("Verifying `#{}` received messages during latest startup.".format(channelName))
+        messages = self.client.FetchMessageHistoryAndFlatten(channel=channel, limit=1, after=self.botLaunchTime)
+        self.assertGreater(len(messages), 0)
+        # TODO Verify the content of the main channel's messages.
+        # TODO Verify pinned messages
+
+  def VerifyStandardRestart(self, oldObjs):
+    self.VerifyStartup()
+    self.VerifyOldRolesSurvivedRestart(oldObjs.rolesNameDict)
+    self.VerifyOldChannelsSurvivedRestart(oldObjs)
+
+  def VerifyOldRolesSurvivedRestart(self, oldRoles):
+    log.Info("Verifying roles survived the restart.")
+    self.assertTrue(oldRoles[roleName].id in tu.GetIDDict(self.client.FetchRoles()) for roleName in oldRoles)
+  
+  def VerifyOldChannelsSurvivedRestart(self, oldObjs):
+    log.Info("Verifying channels survived the restart.")
+    self.assertTrue(
+      oldObjs.channelsNameDict[channelName].id in tu.GetIDDict(self.client.FetchChannels()) \
+        for channelName in oldObjs.channelsNameDict)
+    self.VerifyOldChannelsContentSurvivedRestart(oldObjs)
+
+  def VerifyOldChannelsContentSurvivedRestart(self, oldObjs):
+    log.Info("Verifying channels' content.")
+    for channelName in testCfg.cChannelNames:
+      log.Info("Verifying `#{}`. ({})".format(channelName, self.botLaunchTime))
+      assert channelName in oldObjs.channelsNameDict
+      channel = oldObjs.channelsNameDict[channelName]
+      messages = self.client.FetchMessageHistoryAndFlatten(channel=channel, limit=1, after=self.botLaunchTime)
+      expectedNewMessageCount = 0
+      if channel.name == testCfg.cLogChannelName:
+        expectedNewMessageCount = 1
+      if len(messages) != expectedNewMessageCount:
+        log.Warn("Unexpected message count: {} != {}".format(len(messages), expectedNewMessageCount))
+        for message in messages:
+          log.Warn("Message: {}: {}".format(message.created_at, message.content))
+      assert len(messages) == expectedNewMessageCount
+      # TODO Fully verify the release notes message(s)
+
+  def DidTestPass(self):
+    if hasattr(self, '_outcome'):  # Python 3.4+
+        result = self.defaultTestResult()  # These two methods have no side effects
+        self._feedErrorsToResult(result, self._outcome.errors)
+    else:  # Python 2.7, 3.0 - 3.3
+        result = getattr(self, '_outcomeForDoCleanups', self._resultForDoCleanups)
+    error = self.TestIssuesToReason(result.errors)
+    failure = self.TestIssuesToReason(result.failures)
+    return not error and not failure
+
+  def TestIssuesToReason(self, issuesList):
+      if issuesList and issuesList[-1][0] is self:
+          return issuesList[-1][1]

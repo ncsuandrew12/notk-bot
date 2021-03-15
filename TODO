@@ -3,8 +3,12 @@ User-comprehensible TODOs:
 -Come up with a better name for the bot.
 -Restrict joining/leaving other players to mods
 --Require a setup command before the bot becomes active? e.g. to specify which role is the "mod" role?
+-Add restart command, restricted to mods
 -When multiple users are added/removed in a single command, consolidate them into a single log/message to reduce notifications
 -When multiple users add themselves within the same timespan (e.g. 5 minutes), send only a single message to reduce notifications
+-If so configured, send all newgame notifications to dedicated channel (in our case, among-us-codes) regardless of where
+ the command was typed
+ -Restrict ability to send messages to said channel?
 -Prompt new members to join the Among Us role.
 -Request pizza from new members.
 -(one-off) Send pizza to notk's #general
@@ -29,6 +33,7 @@ User-comprehensible TODOs:
 -Integrate into Discord / commands
 -Delete non-game-code messages from among-us-codes
 -Automatically delete new game messages after some set amount of time (~12? hours)
+-When the bot restarts, check the bot's nickname and update channel topics/descriptions accordingly.
 
 Technical/development TODOs:
 -Automated tests
@@ -38,3 +43,4 @@ Technical/development TODOs:
 -Logging library
 -Detect when an important role/channel has been deleted and handle robustly
 -During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values.
+-Cleanup unnecessary \s from code

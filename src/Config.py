@@ -74,8 +74,16 @@ class Config:
     with open(secretsFile) as file:
       secrets = json.load(file)
 
-    self.cToken = secrets["token"]
-    self.cDbPassword = secrets["dbPassword"]
+    for cfgKey in secrets:
+      if cfgKey == "token":
+        self.cToken = secrets[cfgKey]
+      elif cfgKey == "dbPassword":
+        self.cDbPassword = secrets[cfgKey]
+      elif (cfgKey == "testUser"):
+        if self.cTestMode:
+          for testUserKey in secrets[cfgKey]:
+            if testUserKey == "token":
+              self.cTestUserToken = secrets[cfgKey][testUserKey]
 
     if not self.cToken:
       raise Error.NotKException("Discord API token could not be found")

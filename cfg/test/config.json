@@ -1,5 +1,4 @@
 {
-  "commandPrefix": "!",
   "universalSuffix": "-test",
   "secretFile": "secrets.json",
   "database": {
