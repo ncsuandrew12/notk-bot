@@ -39,7 +39,13 @@ class Database:
     return sqlIter
 
   def Clear(self):
-    self.Execute("DROP TABLE IF EXISTS botStatus")
+    sqlParams = { "dbName" : cfg.cDbName }
+    # Avoids a warning
+    self.Execute(
+      "SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA = %(dbName)s AND TABLE_NAME = 'botStatus'",
+      sqlParams)
+    if self.cursor.rowcount > 0:
+      self.Execute("DROP TABLE IF EXISTS botStatus")
 
   def Setup(self):
     self.Execute("CREATE TABLE IF NOT EXISTS botStatus (id BIGINT PRIMARY KEY, status VARCHAR(20) NOT NULL)")

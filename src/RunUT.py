@@ -25,6 +25,12 @@ def CombineNames(ls):
     names.append(entry.name)
   return names
 
+def CombineIDs(ls):
+  names = []
+  for entry in ls:
+    names.append(entry.id)
+  return names
+
 async def RunBot():
   # TODO show output based on command-line parameters passed to UT
   # TODO handle errors
@@ -152,16 +158,71 @@ class Startup(ut.TestCase):
     oldMessages = {}
     for channel in self.client.client.guilds[0].channels:
       if channel.name in channelNames:
-        channels[channel.name] = channel
-        oldMessages[channel.name] = self.loop.run_until_complete(channel.send(content="test message"))
+        channels[channel.id] = channel
+        oldMessages[channel.id] = self.loop.run_until_complete(channel.send(content="test message"))
+    log.Info("Verifying that the expected channels were found")
     self.assertEqual(len(channelNames), len(channels))
     self.assertEqual(len(channelNames), len(oldMessages))
+    log.Info("Starting bot")
     self.StartupVerify()
-    for channelName in oldMessages:
-      log.Info("Testing that `#{}`'s messages were preserved".format(channelName))
-      self.loop.run_until_complete(channels[channelName].fetch_message(oldMessages[channelName].id))
+    log.Info("Verifying that the pre-existing channels still exist")
+    self.assertTrue(all(channelID in CombineIDs(self.client.FetchChannels()) for channelID in channels))
+    log.Info("Verifying that the pre-existing messages still exist")
+    for channelID in channels:
+      log.Info("Verifying that `#{}`'s messages were preserved".format(channels[channelID].name))
+      self.loop.run_until_complete(channels[channelID].fetch_message(oldMessages[channelID].id))
+      # FUTURE Verify more messages
       # Reaching here means the message was preserved
     self.ShutdownBot()
+
+  def TestStartupExistingRoles(self):
+    log.Info("Testing startup with existing channels")
+    roleNames = [ testCfg.cAmongUsRoleName ]
+    roles = {}
+    oldMembers = {}
+    addedMembers = {}
+    try:
+      for role in self.client.client.guilds[0].roles:
+        if role.name in roleNames:
+          roles[role.id] = role
+          # Ensure that the role has at least one member aside from the bot
+          if len(role.members) < 2:
+            for member in self.client.client.guilds[0].members:
+              if member.id != role.members[0].id:
+                self.loop.run_until_complete(
+                  member.add_roles(
+                    role,
+                    reason="Need 1+ non-bot member of `@{}` for testing purposes; adding `@{}`".format(
+                      role.name,
+                      member.name)))
+                addedMembers[role.id] = member
+                break
+          oldMembers[role.id] = role.members
+          self.assertGreater(len(role.members), 1)
+      log.Info("Verifying that the expected roles were found")
+      self.assertEqual(len(roleNames), len(roles))
+      self.assertEqual(len(roleNames), len(oldMembers))
+      log.Info("Starting bot")
+      self.StartupVerify()
+      log.Info("Verifying that the pre-existing roles still exist")
+      self.assertTrue(all(roleID in CombineIDs(self.client.FetchRoles()) for roleID in roles))
+      log.Info("Verifying that the pre-existing role members are still role members")
+      for role in roles:
+        log.Info("Testing that all of `@{}`'s members were preserved".format(role.name))
+        self.assertTrue(all(member.id in CombineIDs(role.members) for member in oldMembers[role.id]))
+        # Reaching here means the message was preserved
+      self.ShutdownBot()
+    finally:
+      try:
+        for roleID in addedMembers:
+          member.remove_roles(
+            roles[roleID],
+            reason="Cleanup: removing `@{}` from `@{}`".format(member.name, roles[roleID].name))
+      except Exception as e:
+        log.Warn("Error during cleanup: {}".format(e))
+      except:
+        log.Warn("Error during cleanup.")
+
 
 if __name__ == '__main__':
   self.startup()
