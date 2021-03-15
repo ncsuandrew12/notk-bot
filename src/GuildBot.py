@@ -179,7 +179,7 @@ class GuildBot:
     releaseNotesMessage = None
     if self.channelBot:
       # FIXME Parse all history until we find the instructional message
-      for message in await self.channelBot.history(limit=1000).flatten():
+      for message in await self.channelBot.history(limit=None, oldest_first=True).flatten():
         if message.author.id == self.bot.user.id:
           # dlog.SInfo(ctx, 'Found message in {}: [{}]'.format(\
           #   self.channelBot.mention,\
@@ -190,7 +190,7 @@ class GuildBot:
               message.author.mention,\
               self.channelBot.mention,\
               message.jump_url))
-          elif message.content.startswith(cfg.cReleaseNotes):
+          elif message.content.startswith(cfg.cReleaseNotesHeader):
             releaseNotesMessage = message
             dlog.SInfo(ctx, 'Found {} release notes message in {}: {}'.format(\
               message.author.mention,\
@@ -226,7 +226,6 @@ class GuildBot:
       releaseNotesLatestSection = "Version {}:\n{}".format(\
         versionStr,\
         releaseNotes[cfg.cExternalChanges])
-    releaseNotesLatestSection
 
     # Handle release notes pinned message
     oldVersionStr = None
@@ -252,7 +251,7 @@ class GuildBot:
         releaseNotesSections.insert(0, releaseNotesLatestSection)
     else:
       releaseNotesSections = [ releaseNotesLatestSection ]
-    releaseNotesMessageText = "{}\n\n{}".format(cfg.cReleaseNotes, "".join(releaseNotesSections))
+    releaseNotesMessageText = "{}\n\n{}".format(cfg.cReleaseNotesHeader, "".join(releaseNotesSections))
 
     if not releaseNotesMessage:
       await dlog.Info(self, ctx, 'Sending `@{}` release notes message'.format(cfg.cAmongUsRoleName))

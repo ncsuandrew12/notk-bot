@@ -12,4 +12,4 @@ targetDir=/home/`whoami`/$(jq -r ".dir" <<< $deploymentJson)
 
 cd ${targetDir}
 
-python3 -m unittest -fv ${targetDir}/RunUT.py
+python3 -m unittest discover -fv -s ${targetDir} -p "*Test.py"

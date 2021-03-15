@@ -12,8 +12,7 @@ class Config:
     self.cCommandLeave = "leave"
     self.cCommandNewGame = "newgame"
     self.cExternalChanges = "EXTERNAL CHANGES"
-    self.cInstructionalLine = "⚠ notk-bot Instructions ⚠"
-    self.cReleaseNotes = "Release Notes:"
+    self.cReleaseNotesHeader = "Release Notes:"
     self.cRoleModPrefix = "mod"
     self.cRoleModSubstring = "moderator"
     self.cTestMode = False
@@ -60,6 +59,7 @@ class Config:
     self.cAmongUsRoleName = "among-us{}".format(self.cUniversalSuffix)
     self.cBotChannelName = self.cBotName
     self.cLogChannelName = "{}-log".format(self.cBotChannelName)
+    self.cInstructionalLine = "⚠ {} Instructions ⚠".format(self.cBotName)
 
     cCommandRoot = "au" # Must match the @bot.commmand() function name
     cCommandBase = "{}{}".format(self.cCommandPrefix, cCommandRoot)
