@@ -87,6 +87,11 @@ class GuildBot:
       raise
     finally:
       versionFile.close()
+    if cfg.cTestMode:
+      versionMajor=int(re.sub(r"([0-9]+)\.[0-9]+", r"\1", versionStr))
+      versionMinor=int(re.sub(r"[0-9]+\.([0-9]+)", r"\1", versionStr))
+      versionMinor+=1
+      versionStr="{}.{}".format(versionMajor, versionMinor)
     dlog.SInfo(ctx, "Version: {}".format(versionStr))
 
     # Get release notes information from file

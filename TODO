@@ -37,3 +37,4 @@ Technical/development TODOs:
 -Generalize RoleEnroller
 -Logging library
 -Detect when an important role/channel has been deleted and handle robustly
+-During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values.

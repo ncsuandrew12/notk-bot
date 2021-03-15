@@ -4,5 +4,6 @@
   "secretFile": "secrets.json",
   "database": {
     "nameSuffix": "Test"
-  }
+  },
+  "test": true
 }

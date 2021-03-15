@@ -16,6 +16,7 @@ class Config:
     self.cReleaseNotes = "Release Notes:"
     self.cRoleModPrefix = "mod"
     self.cRoleModSubstring = "moderator"
+    self.cTestMode = False
 
     self.cUniversalSuffix = ""
     secretsFile = "cfg/secrets.json"
@@ -49,6 +50,8 @@ class Config:
             self.cDbName = databaseCfg[dbKey]
           elif dbKey == "nameSuffix":
             dbNameSuffix = databaseCfg[dbKey]
+      elif cfgKey == "test":
+        self.cTestMode = config[cfgKey]
 
     self.cDbName += dbNameSuffix
 
