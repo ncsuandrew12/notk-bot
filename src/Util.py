@@ -1,7 +1,5 @@
-# Modules
+# Standard
 import asyncio
-
-# Local
 
 async def AwaitTasks(tasks):
   for task in tasks:

@@ -1,8 +1,10 @@
-# Modules
+# Standard
 import argparse
-import discord
 
 from inspect import currentframe, getframeinfo
+
+# Modules
+import discord
 
 # Local
 import Logging as log

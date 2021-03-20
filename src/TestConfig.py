@@ -1,7 +1,4 @@
-# Modules
-
 # Local
-
 from Config import cfg
 
 class TestConfig:

@@ -1,4 +1,4 @@
-# Modules
+# Standard
 
 # Local
 from Exceptions import MinorException

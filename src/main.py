@@ -1,4 +1,4 @@
-# Modules
+# Standard
 
 # Local
 from GuildBotManager import notkBot

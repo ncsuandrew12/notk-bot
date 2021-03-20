@@ -1,7 +1,9 @@
-# Modules
-import discord
+# Standard
 import inspect
 import re
+
+# Modules
+import discord
 
 # Local
 import Error

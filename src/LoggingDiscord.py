@@ -1,5 +1,3 @@
-# Modules
-
 # Local
 import Logging as log
 

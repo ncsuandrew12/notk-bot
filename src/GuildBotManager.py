@@ -1,16 +1,16 @@
-# Modules
+# Standard
 import asyncio
-import discord
 import inspect
-
-from discord.ext import commands
 from inspect import currentframe, getframeinfo
+
+# Modules
+import discord
+from discord.ext import commands
 
 # Local
 import Error
 import Logging as log
 import Util
-
 from Config import cfg
 from Database import Database
 from GuildBot import GuildBot
