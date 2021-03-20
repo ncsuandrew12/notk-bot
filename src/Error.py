@@ -1,6 +1,6 @@
 # Modules
 
-# notk-bot
+# Local
 from Exceptions import MinorException
 from Exceptions import NotkException
 

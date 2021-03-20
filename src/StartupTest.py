@@ -10,12 +10,13 @@ from datetime import datetime
 from discord.ext import commands
 from inspect import currentframe, getframeinfo
 
-# notk-bot
+# Local
 import Error
 import Logging as log
 import TestExceptions as te
 import TestClient
 import TestUtil as tu
+import Util
 
 from Config import cfg
 from Database import Database
@@ -82,10 +83,12 @@ class StartupTest(ut.TestCase):
     log.Info("Testing startup with existing channels")
     channels = {}
     oldMessages = {}
+    tasks = []
     for channel in self.client.client.guilds[0].channels:
       if channel.name in testCfg.cChannelNames:
         channels[channel.id] = channel
-        oldMessages[channel.id] = self.loop.run_until_complete(channel.send(content="test message"))
+        tasks.append(self.TestPreExistingChannel(oldMessages, channel))
+    Util.WaitForTasks(self.loop, tasks)
     log.Info("Verifying that the expected channels were found")
     self.assertEqual(len(testCfg.cChannelNames), len(channels))
     self.assertEqual(len(testCfg.cChannelNames), len(oldMessages))
@@ -100,6 +103,9 @@ class StartupTest(ut.TestCase):
       # FUTURE Verify more messages
       # Reaching here means the message was preserved
     self.ShutdownBot()
+
+  async def TestPreExistingChannel(self, oldMessages, channel):
+    oldMessages[channel.id] = await channel.send(content="test message")
 
   def TestPreExistingRoles(self):
     log.Info("Testing startup with existing channels")
@@ -151,14 +157,14 @@ class StartupTest(ut.TestCase):
   def testCommands(self):
     self.StartupVerify()
     dObjs = self.LocateDiscordObjects()
-    # dObjs.testUser = self.client.FetchUser(self.client.testUserClient.user.id)
+    dObjs.testUser = self.client.client.user
     # TODO
     # for member in self.client.FetchMembersAndFlatten():
     #   log.Info("Member: {}: {}".format(member.id, member.name))
     #   if member.id != self.client.client.user.id:
     #     dObjs.testUser = member
     # dObjs.testUser = self.client.client.guilds[0].members[0]
-    # self.assertTrue(dObjs.testUser)
+    self.assertTrue(dObjs.testUser)
     self.TestAmongUsCommandJoin(dObjs)
     # self.TestAmongUsCommandLeave(dObjs)
     self.ShutdownBot()
@@ -166,28 +172,27 @@ class StartupTest(ut.TestCase):
   def TestAmongUsCommandJoin(self, dObjs):
     preCommandTime = datetime.utcnow()
     log.Debug("Sending basic {} command".format(testCfg.cCommandJoin))
-    # testChannel = self.client.CreateChannel("test", "test", "testing")
-    # self.client.SendToChannel(
-    #   testChannel.id,
-    #   client=self.client.testUserClient,
-    #   content="{}{} {}".format(
-    #     testCfg.cCommandPrefix,
-    #     testCfg.cCommandRoot,
-    #     testCfg.cCommandJoin))
-    #     dObjs.testUser.mention
-    # time.sleep(45)
-    # messages = self.client.FetchMessageHistoryAndFlatten(
-    #   channel=testChannel,
-    #   limit=None,
-    #   after=preCommandTime,
-    #   oldestFirst=True)
+    self.client.SendToChannel(
+      self.client.testChannel.id,
+      client=self.client.client,
+      content="{}{} {}".format(
+        testCfg.cCommandPrefix,
+        testCfg.cCommandRoot,
+        testCfg.cCommandJoin))
+        # dObjs.testUser.mention
+    time.sleep(45)
+    messages = self.client.FetchMessageHistoryAndFlatten(
+      channel=self.client.testChannel,
+      limit=None,
+      after=preCommandTime,
+      oldestFirst=True)
     # TODO Verify message response
-    # foundResponse = False
-    # for message in messages:
-    #   log.Debug("Checking message: `@{}` @{}: {}".format(message.author.name, message.created_at, message.content))
-    #   foundResponse = (message.content == "Hey `@among-us-test` players! @andrewf is now among the Among Us players!")
-    #   if (foundResponse):
-    #     break
+    foundResponse = False
+    for message in messages:
+      log.Debug("Checking message: `@{}` @{}: {}".format(message.author.name, message.created_at, message.content))
+      foundResponse = (message.content == "Hey `@among-us-test` players! @andrewf is now among the Among Us players!")
+      if (foundResponse):
+        break
     # self.assertTrue(foundResponse)
       # TODO Verify that member gained the role
       # TODO Verify that the bot responded with an announcement
@@ -199,7 +204,6 @@ class StartupTest(ut.TestCase):
     # TODO Test all of the above for multiple other players of heterogenous statuses
     # TODO Test all of the above in an unrelated private channel
     # TODO Test all of the above in an unrelated public channel
-
 
   def RunAndWaitForBot(self):
     assert not self.bot

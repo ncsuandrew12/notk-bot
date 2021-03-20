@@ -1,7 +1,7 @@
 # Modules
 # import discord
 
-# notk-bot
+# Local
 from Config import cfg
 
 class AuthorStubbed:

@@ -3,7 +3,7 @@ import discord
 import inspect
 import re
 
-# notk-bot
+# Local
 import Error
 import Logging as log
 import LoggingDiscord as dlog

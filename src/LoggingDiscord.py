@@ -1,6 +1,6 @@
 # Modules
 
-# notk-bot
+# Local
 import Logging as log
 
 async def DLog(guildBot, ctx, lvl, msg):

@@ -1,6 +1,6 @@
 # Modules
 
-# notk-bot
+# Local
 
 from Config import cfg
 
@@ -19,7 +19,9 @@ class TestConfig:
     self.cAmongUsRoleName = "among-us-test"
     self.cBotChannelName = "notk-bot-test"
     self.cLogChannelName = "notk-bot-test-log"
+    self.cTestChannelName = "notk-bot-test-public"
     self.cInstructionalLine = "⚠ notk-bot-test Instructions ⚠"
+    self.cTestChannelNames = [ self.cTestChannelName ]
     self.cChannelNames = [ self.cBotChannelName, self.cLogChannelName ]
     self.cRoleNames = [ self.cAmongUsRoleName ]
 

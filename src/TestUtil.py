@@ -1,7 +1,7 @@
 # Modules
 import asyncio
 
-# notk-bot
+# Local
 
 def GetNameDict(ls, filterNames = None):
   names = {}

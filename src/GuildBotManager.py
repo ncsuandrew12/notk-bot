@@ -6,7 +6,7 @@ import inspect
 from discord.ext import commands
 from inspect import currentframe, getframeinfo
 
-# notk-bot
+# Local
 import Error
 import Logging as log
 import Util
@@ -55,18 +55,10 @@ class GuildBotManager:
 
   def Shutdown(self):
     log.Debug("Shutting down")
-
+    tasks = []
     for guild in discordBot.guilds:
-      try:
-        shutdown = False
-        tasks.append(self.loop.run_until_complete(shutdown = self.guildBots[guild.id].Shutdown()))
-        if not shutdown:
-          Error.Err("Failed to update {}'s status (shutdown)".format(guild.name))
-      except Exception as e:
-        log.Err("Error while shutting down {}'s bot: {}".format(guild.name, e))
-      except:
-        log.Err("Error while shutting down {}'s bot!".format(guild.name))
-
+      tasks.append(self.ShutdownGuild(guild.id))
+    Util.WaitForTasks(self.loop, tasks)
     try:
       self.loop.run_until_complete(discordBot.close())
       discordBot.clear()
@@ -74,15 +66,23 @@ class GuildBotManager:
       log.Err("Error while closing Discord command Bot: {}".format(e))
     except:
       log.Err("Error while closing Discord command Bot!")
-
     self.guildBots = {}
-
     try:
       self.loop.close()
     except Exception as e:
       log.Err("Error while closing loop: {}".format(e))
     except:
       log.Err("Error while closing loop!")
+
+  async def ShutdownGuild(self, guildID):
+    try:
+      shutdown = await self.guildBots[guildID].Shutdown()
+      if not shutdown:
+        Error.Err("Failed to update {}'s status (shutdown)".format(guild.name))
+    except Exception as e:
+      log.Err("Error while shutting down {}'s bot: {}".format(guild.name, e))
+    except:
+      log.Err("Error while shutting down {}'s bot!".format(guild.name))
 
   def WaitUntilReady(self):
     log.Info("Waiting until ready")
@@ -96,24 +96,22 @@ class GuildBotManager:
 
   def StartGuildBots(self):
     log.Debug("Starting {} {}".format(len(discordBot.guilds), GuildBot.__name__))
-
     tasks = []
     for guild in discordBot.guilds:
       tasks.append(self.loop.create_task(self.guildBots[guild.id].Startup()))
-
     Util.WaitForTasks(self.loop, tasks)
-
     log.Debug("{} {} running".format(len(self.guildBots), GuildBot.__name__))
 
   def SetupGuildBots(self):
     log.Debug("Setting up {} guilds".format(len(discordBot.guilds)))
-
+    tasks = []
     for guild in discordBot.guilds:
-      self.loop.run_until_complete(self.guildBots[guild.id].Setup())
-
+      tasks.append(self.guildBots[guild.id].Setup())
+    Util.WaitForTasks(self.loop, tasks)
     log.Debug("{} guilds set up".format(len(self.guildBots)))
 
   async def Command(self, ctx, cmd, *args):
+    print("Command: {} {}".format(cmd, args))
     try:
       if ctx.guild.id not in self.guildBots:
         await Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\

@@ -3,7 +3,7 @@ import datetime
 import inspect
 import re
 
-# notk-bot
+# Local
 from Config import cfg
 
 def Log(lvl, msg):

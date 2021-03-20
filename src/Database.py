@@ -1,7 +1,7 @@
 # Modules
 import mysql.connector
 
-# notk-bot
+# Local
 import Error
 import Logging as log
 # import TestExceptions as te

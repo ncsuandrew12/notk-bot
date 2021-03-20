@@ -1,6 +1,6 @@
 # Modules
 
-# notk-bot
+# Local
 
 class NotkTestException(Exception):
   pass

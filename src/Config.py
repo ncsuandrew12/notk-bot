@@ -3,7 +3,7 @@ import getpass
 import json
 import os
 
-# notk-bot
+# Local
 import Error
 
 class Config:
