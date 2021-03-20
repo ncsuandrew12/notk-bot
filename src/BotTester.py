@@ -2,7 +2,6 @@
 import asyncio
 import time
 import unittest as ut
-
 from datetime import datetime
 
 # Local
@@ -11,7 +10,6 @@ import Logging as log
 import TestClient
 import TestUtil as tu
 import Util
-
 from TestConfig import testCfg
 
 class BotTester(ut.TestCase):
@@ -19,14 +17,18 @@ class BotTester(ut.TestCase):
   def setUp(self):
     self.bot = None
     self.botLaunchTime = None
-    self.loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(self.loop)
+    try:
+      self.loop = asyncio.get_event_loop()
+    except:
+      self.loop = asyncio.new_event_loop()
+      asyncio.set_event_loop(self.loop)
     self.client = TestClient.TestClient(self.loop)
     self.client.database.Connect()
     self.client.database.Clear()
     self.client.Run()
     self.client.WaitUntilReady()
     self.client.ResetGuild()
+    self.client.Setup()
 
   def tearDown(self):
     try:
@@ -38,7 +40,6 @@ class BotTester(ut.TestCase):
       self.client.database.Clear()
       self.client.ResetGuild()
       self.client.Shutdown()
-    self.loop.stop()
 
   def TerminateBot(self):
     assert False
@@ -103,11 +104,13 @@ class BotTester(ut.TestCase):
     container = tu.Container()
     container.instructionalMessage = None
     container.releaseNotesMessage = None
-    container.rolesNameDict = tu.GetNameDict(self.client.FetchRoles())
-    container.channelsNameDict = tu.GetNameDict(self.client.FetchChannels(), testCfg.cChannelNames)
-    if testCfg.cBotChannelName in container.channelsNameDict:
+    self.client.FetchRoles()
+    container.rolesByName = self.client.rolesByName
+    self.client.FetchChannels()
+    container.channelsByName = self.client.channelsByName
+    if testCfg.cBotChannelName in container.channelsByName:
       messages = self.client.FetchMessageHistoryAndFlatten(
-        channel=container.channelsNameDict[testCfg.cBotChannelName],
+        channel=container.channelsByName[testCfg.cBotChannelName],
         limit=None,
         oldestFirst=True)
       for message in messages:
@@ -127,29 +130,30 @@ class BotTester(ut.TestCase):
 
   def VerifyClean(self):
     log.Info("Verifying clean state")
-    self.assertTrue(all(name not in tu.GetNameDict(self.client.FetchRoles()) for name in testCfg.cRoleNames))
-    self.assertTrue(all(name not in tu.GetNameDict(self.client.FetchChannels()) for name in testCfg.cChannelNames))
+    self.client.FetchChannels()
+    self.assertTrue(all(name not in self.client.channelsByID for name in testCfg.cRoleNames))
+    self.assertTrue(all(name not in self.client.channelsByName for name in testCfg.cChannelNames))
 
   def VerifyStartup(self):
     dObjs = self.LocateDiscordObjects()
-    self.VerifyAllRoles(dObjs.rolesNameDict)
+    self.VerifyAllRoles(dObjs.rolesByName)
     self.VerifyAllChannels(dObjs)
 
-  def VerifyAllRoles(self, rolesNameDict):
+  def VerifyAllRoles(self, rolesByName):
     log.Info("Verifying existence of all roles")
-    self.assertTrue(all(name in rolesNameDict for name in testCfg.cRoleNames))
+    self.assertTrue(all(name in rolesByName for name in testCfg.cRoleNames))
 
   def VerifyAllChannels(self, dObjs):
     log.Info("Verifying existence of all channels")
-    self.assertTrue(all(name in dObjs.channelsNameDict for name in testCfg.cChannelNames))
+    self.assertTrue(all(name in dObjs.channelsByName for name in testCfg.cChannelNames))
     self.VerifyAllChannelsContent(dObjs)
 
   def VerifyAllChannelsContent(self, dObjs):
     log.Info("Verifying channels' content.")
     self.assertTrue(dObjs.releaseNotesMessage)
     self.assertTrue(dObjs.instructionalMessage)
-    for channelName in dObjs.channelsNameDict:
-      channel = dObjs.channelsNameDict[channelName]
+    for channelName in dObjs.channelsByName:
+      channel = dObjs.channelsByName[channelName]
       if channel.name == testCfg.cBotChannelName:
         # TODO Verify release notes message content
         expectedInstructionMessageContent = """⚠ notk-bot-test Instructions ⚠
@@ -162,8 +166,8 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
           cmdJoin=testCfg.cCommandJoin,
           cmdLeave=testCfg.cCommandLeave,
           cmdNewGame=testCfg.cCommandNewGame,
-          amongUsRoleID=dObjs.rolesNameDict[testCfg.cAmongUsRoleName].id,
-          logChannelID=dObjs.channelsNameDict[testCfg.cLogChannelName].id)
+          amongUsRoleID=dObjs.rolesByName[testCfg.cAmongUsRoleName].id,
+          logChannelID=dObjs.channelsByName[testCfg.cLogChannelName].id)
         if dObjs.instructionalMessage.content != expectedInstructionMessageContent:
           log.Info(
             "Instructional message content mismatch:\n\"\"\"{}\"\"\"\n\"\"\"{}\"\"\"".format(
@@ -179,26 +183,28 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
 
   def VerifyStandardRestart(self, oldObjs):
     self.VerifyStartup()
-    self.VerifyOldRolesSurvivedRestart(oldObjs.rolesNameDict)
+    self.VerifyOldRolesSurvivedRestart(oldObjs.rolesByName)
     self.VerifyOldChannelsSurvivedRestart(oldObjs)
 
   def VerifyOldRolesSurvivedRestart(self, oldRoles):
     log.Info("Verifying roles survived the restart.")
-    self.assertTrue(oldRoles[roleName].id in tu.GetIDDict(self.client.FetchRoles()) for roleName in oldRoles)
+    self.client.FetchRoles()
+    self.assertTrue(oldRoles[roleName].id in self.client.rolesByID for roleName in oldRoles)
   
   def VerifyOldChannelsSurvivedRestart(self, oldObjs):
     log.Info("Verifying channels survived the restart.")
+    self.client.FetchChannels()
     self.assertTrue(
-      oldObjs.channelsNameDict[channelName].id in tu.GetIDDict(self.client.FetchChannels()) \
-        for channelName in oldObjs.channelsNameDict)
+      oldObjs.channelsByName[channelName].id in self.client.channelsByName
+        for channelName in oldObjs.channelsByName)
     self.VerifyOldChannelsContentSurvivedRestart(oldObjs)
 
   def VerifyOldChannelsContentSurvivedRestart(self, oldObjs):
     log.Info("Verifying channels' content.")
     for channelName in testCfg.cChannelNames:
       log.Info("Verifying `#{}`. ({})".format(channelName, self.botLaunchTime))
-      assert channelName in oldObjs.channelsNameDict
-      channel = oldObjs.channelsNameDict[channelName]
+      assert channelName in oldObjs.channelsByName
+      channel = oldObjs.channelsByName[channelName]
       messages = self.client.FetchMessageHistoryAndFlatten(channel=channel, limit=1, after=self.botLaunchTime)
       expectedNewMessageCount = 0
       if channel.name == testCfg.cLogChannelName:
@@ -256,7 +262,8 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
     log.Info("Starting bot")
     self.StartupVerify()
     log.Info("Verifying that the pre-existing channels still exist")
-    self.assertTrue(all(channelID in tu.GetIDDict(self.client.FetchChannels()) for channelID in channels))
+    self.client.FetchChannels()
+    self.assertTrue(all(channelID in self.client.channelsByID for channelID in channels))
     log.Info("Verifying that the pre-existing messages still exist")
     for channelID in channels:
       log.Info("Verifying that `#{}`'s messages were preserved".format(channels[channelID].name))
@@ -297,7 +304,8 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
       log.Info("Starting bot")
       self.StartupVerify()
       log.Info("Verifying that the pre-existing roles still exist")
-      self.assertTrue(all(roleID in tu.GetIDDict(self.client.FetchRoles()) for roleID in roles))
+      self.client.FetchRoles()
+      self.assertTrue(all(roleID in self.client.rolesByID for roleID in roles))
       log.Info("Verifying that the pre-existing role members are still role members")
       log.Info("Testing that all of `@{}`'s members were preserved".format(role.name))
       self.assertTrue(all(member.id in tu.GetIDDict(role.members) for member in oldMembers[role.id] for role in roles))

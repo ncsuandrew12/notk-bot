@@ -20,7 +20,7 @@ def Log(lvl, msg):
     datetime.datetime.now(),
     datetime.datetime.now(datetime.timezone(datetime.timedelta(0))).astimezone().tzinfo,
     threadName + ((10 - len(threadName)) * " "),
-    lvl + ((len("WARNING") - len(lvl) - 1) * " "),
+    lvl + ((len("WARNING") - len(lvl)) * " "),
     cfg.cBotName.upper(),
     re.sub(r'^.*/([^/]+py)$', '\g<1>', frame.f_code.co_filename),
     frame.f_lineno,

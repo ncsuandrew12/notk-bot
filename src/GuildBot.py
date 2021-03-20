@@ -70,7 +70,8 @@ class GuildBot:
       dlog.SInfo(ctx, 'Found: `@{}`'.format(role.name))
 
   def GetContextStubbed(self):
-    return ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
+    # TODO Use an actual member instead of a stubbed Author.
+    return ContextStubbed(self.guild, self.bot.user)
 
   async def Setup(self):
     roleMod = None

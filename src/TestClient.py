@@ -36,7 +36,10 @@ class TestClient:
     self.loop.run_until_complete(self.client.logout()) #close?
 
   def FetchChannels(self):
-    return self.loop.run_until_complete(self.client.guilds[0].fetch_channels())
+    channels = self.loop.run_until_complete(self.client.guilds[0].fetch_channels())
+    self.channelsByID = tu.GetIDDict(channels)
+    self.channelsByName = tu.GetNameDict(channels)
+    return channels
 
   def FetchMembersAndFlatten(self, limit=1000):
     return self.loop.run_until_complete(self.FetchMembersAndFlattenAsync(limit=limit))
@@ -45,7 +48,10 @@ class TestClient:
     return await self.client.guilds[0].fetch_members(limit=limit).flatten()
 
   def FetchRoles(self):
-    return self.loop.run_until_complete(self.client.guilds[0].fetch_roles())
+    roles = self.loop.run_until_complete(self.client.guilds[0].fetch_roles())
+    self.rolesByID = tu.GetIDDict(roles)
+    self.rolesByName = tu.GetNameDict(roles)
+    return roles
 
   def FetchMessageHistoryAndFlatten(self, channel, limit=100, before=None, after=None, oldestFirst=None):
     return self.loop.run_until_complete(
@@ -75,42 +81,46 @@ class TestClient:
     self.DeleteChannels([channelName])
 
   def DeleteChannels(self, channelNames):
-    self.DeleteByName(self.FetchChannels(), channelNames)
+    self.FetchChannels()
+    self.DeleteByKey(self.channelsByName, channelNames)
 
   def DeleteChannelsByID(self, channelIDs):
-    self.DeleteByID(self.FetchChannels(), channelIDs)
+    self.FetchChannels()
+    self.DeleteByKey(self.channelsByID, channelIDs)
 
   def DeleteRole(self, roleName):
     self.DeleteRoles([roleName])
 
   def DeleteRoles(self, roleNames):
-    self.DeleteByName(self.FetchRoles(), roleNames)
+    self.FetchRoles()
+    self.DeleteByKey(self.rolesByName, roleNames)
 
-  def DeleteByID(self, objects, ids):
-    for obj in objects:
-      if obj.id in ids:
-        log.Info("Deleting {} ({})".format(obj.name, obj.id))
-        self.loop.run_until_complete(obj.delete())
+  def DeleteByKey(self, objects, keys):
+    delKeys = []
+    for key in objects:
+      if key in keys:
+        delKeys.append(key)
+    for key in delKeys:
+      log.Info("Deleting {} ({})".format(objects[key].name, key))
+      self.loop.run_until_complete(objects[key].delete())
+      del objects[key]
 
-  def DeleteByName(self, objects, names):
-    for obj in objects:
-      if obj.name in names:
-        log.Info("Deleting {}".format(obj.name))
-        self.loop.run_until_complete(obj.delete())
-
-  def ResetGuild(self,):
+  def ResetGuild(self):
     log.Info("Resetting guild")
     # Do this instead of looping on DeleteChannel for efficiency
     self.DeleteChannels(testCfg.cTestChannelNames)
     self.DeleteChannels(testCfg.cChannelNames)
     self.DeleteRoles(testCfg.cRoleNames)
-    channels = tu.GetNameDict(self.FetchChannels())
-    if testCfg.cTestChannelName in channels:
-      self.testChannel = channels[testCfg.cTestChannelName]
-    else:
-      self.testChannel = self.CreateChannel(testCfg.cTestChannelName, "test", "testing")
+    self.FetchChannels()
+    if testCfg.cTestChannelName in self.channelsByName:
+      self.testChannel = self.channelsByName[testCfg.cTestChannelName]
     log.Info("Guild reset")
     # TODO Delete all messages by the client.
+
+  def Setup(self):
+    self.FetchChannels()
+    if not testCfg.cTestChannelName in self.channelsByName:
+      self.testChannel = self.CreateChannel(testCfg.cTestChannelName, "test", "testing")
 
   def SendToChannel(self, channelID, client=None, content=""):
     if not client:

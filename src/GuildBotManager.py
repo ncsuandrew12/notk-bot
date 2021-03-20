@@ -118,7 +118,7 @@ class GuildBotManager:
     log.Debug("{} guilds set up".format(len(self.guildBots)))
 
   async def Command(self, ctx, cmd, *args):
-    print("Command: {} {}".format(cmd, args))
+    log.Debug("Command: {} {}".format(cmd, " ".join(args)))
     try:
       if ctx.guild.id not in self.guildBots:
         await Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
@@ -126,7 +126,7 @@ class GuildBotManager:
           "andrewf#6219"))
 
       guildBot = self.guildBots[ctx.guild.id]
-      await guildBot.Command(ctx, cmd, *args)
+      await self.loop.create_task(guildBot.Command(ctx, cmd, *args))
     except NotkException as e:
       # This error will have already been logged
       return
