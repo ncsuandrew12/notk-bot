@@ -1,11 +1,11 @@
 # Local
 from BotTesterProcess import BotTesterProcess
+from BotTesterThread import BotTesterThread
 
-class StartupTest(BotTesterProcess):
-
+class StartupTestProcess(BotTesterProcess):
   def testStartup(self):
-    self.TestVirgin()
-    self.TestStandardRestart()
-    self.TestMissingChannels()
-    self.TestMissingRoles()
-    self.TestPreExistingChannels()
+    self.TestStartup()
+
+class StartupTestThread(BotTesterThread):
+  def testStartup(self):
+    self.TestStartup()

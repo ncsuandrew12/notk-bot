@@ -1,6 +1,5 @@
 # Standard
 import asyncio
-# import threading
 import time
 import unittest as ut
 
@@ -38,105 +37,25 @@ class BotTester(ut.TestCase):
     if self.DidTestPass():
       self.client.database.Clear()
       self.client.ResetGuild()
-    self.client.Shutdown()
+      self.client.Shutdown()
     self.loop.stop()
 
-  def TestVirgin(self):
-    log.Info("Testing virgin startup")
-    self.VerifyClean()
-    self.StartupVerifyShutdown()
+  def TerminateBot(self):
+    assert False
 
-  def TestStandardRestart(self):
-    preRestartDiscordObjects = self.LocateDiscordObjects()
-    self.RunAndWaitForBot()
-    self.VerifyStandardRestart(preRestartDiscordObjects)
-    self.ShutdownBot()
+  def DidTestPass(self):
+    if hasattr(self, '_outcome'):  # Python 3.4+
+        result = self.defaultTestResult()  # These two methods have no side effects
+        self._feedErrorsToResult(result, self._outcome.errors)
+    else:  # Python 2.7, 3.0 - 3.3
+        result = getattr(self, '_outcomeForDoCleanups', self._resultForDoCleanups)
+    error = self.TestIssuesToReason(result.errors)
+    failure = self.TestIssuesToReason(result.failures)
+    return not error and not failure
 
-  def TestMissingChannels(self):
-    for channelName in testCfg.cChannelNames:
-      log.Info("Testing startup with missing `#{}`".format(channelName))
-      self.client.DeleteChannel(channelName)
-      self.StartupVerifyShutdown()
-
-  def TestMissingRoles(self):
-    for roleName in [ testCfg.cAmongUsRoleName ]:
-      log.Info("Testing startup with missing `@{}`".format(roleName))
-      self.client.DeleteRole(roleName)
-      self.StartupVerifyShutdown()
-
-  def TestPreExistingChannels(self):
-    log.Info("Testing startup with existing channels")
-    channels = {}
-    oldMessages = {}
-    tasks = []
-    for channel in self.client.client.guilds[0].channels:
-      if channel.name in testCfg.cChannelNames:
-        channels[channel.id] = channel
-        tasks.append(self.TestPreExistingChannel(oldMessages, channel))
-    Util.WaitForTasks(self.loop, tasks)
-    log.Info("Verifying that the expected channels were found")
-    self.assertEqual(len(testCfg.cChannelNames), len(channels))
-    self.assertEqual(len(testCfg.cChannelNames), len(oldMessages))
-    log.Info("Starting bot")
-    self.StartupVerify()
-    log.Info("Verifying that the pre-existing channels still exist")
-    self.assertTrue(all(channelID in tu.GetIDDict(self.client.FetchChannels()) for channelID in channels))
-    log.Info("Verifying that the pre-existing messages still exist")
-    for channelID in channels:
-      log.Info("Verifying that `#{}`'s messages were preserved".format(channels[channelID].name))
-      self.loop.run_until_complete(channels[channelID].fetch_message(oldMessages[channelID].id))
-      # FUTURE Verify more messages
-      # Reaching here means the message was preserved
-    self.ShutdownBot()
-
-  async def TestPreExistingChannel(self, oldMessages, channel):
-    oldMessages[channel.id] = await channel.send(content="test message")
-
-  def TestPreExistingRoles(self):
-    log.Info("Testing startup with existing channels")
-    roles = {}
-    oldMembers = {}
-    addedMembers = {}
-    try:
-      for role in self.client.client.guilds[0].roles:
-        if role.name in testCfg.cRoleNames:
-          roles[role.id] = role
-          # Ensure that the role has at least one member aside from the bot
-          if len(role.members) < 2:
-            for member in self.client.client.guilds[0].members:
-              if member.id != role.members[0].id:
-                self.loop.run_until_complete(
-                  member.add_roles(
-                    role,
-                    reason="Need 1+ non-bot member of `@{}` for testing purposes; adding `@{}`".format(
-                      role.name,
-                      member.name)))
-                addedMembers[role.id] = member
-                break
-          oldMembers[role.id] = role.members
-          self.assertGreater(len(role.members), 1)
-      log.Info("Verifying that the expected roles were found")
-      self.assertEqual(len(testCfg.cRoleNames), len(roles))
-      self.assertEqual(len(testCfg.cRoleNames), len(oldMembers))
-      log.Info("Starting bot")
-      self.StartupVerify()
-      log.Info("Verifying that the pre-existing roles still exist")
-      self.assertTrue(all(roleID in tu.GetIDDict(self.client.FetchRoles()) for roleID in roles))
-      log.Info("Verifying that the pre-existing role members are still role members")
-      log.Info("Testing that all of `@{}`'s members were preserved".format(role.name))
-      self.assertTrue(all(member.id in tu.GetIDDict(role.members) for member in oldMembers[role.id] for role in roles))
-      self.ShutdownBot()
-    finally:
-      try:
-        for roleID in addedMembers:
-          self.client.RemoveMemberRole(
-            member=addedMembers[roleID],
-            role=roles[roleID],
-            reason="Cleanup: removing `@{}` from `@{}`".format(addedMembers[roleID].name, roles[roleID].name))
-      except Exception as e:
-        log.Warn("Error during cleanup: {}".format(e))
-      except:
-        log.Warn("Error during cleanup.")
+  def TestIssuesToReason(self, issuesList):
+      if issuesList and issuesList[-1][0] is self:
+          return issuesList[-1][1]
 
   def RunAndWaitForBot(self):
     self.RunBot()
@@ -145,7 +64,7 @@ class BotTester(ut.TestCase):
   def RunBot(self):
     assert not self.bot
     self.botLaunchTime = datetime.utcnow()
-    self.LaunchBot()
+    self.bot = self.LaunchBot()
 
   def LaunchBot(self):
     assert False
@@ -167,14 +86,9 @@ class BotTester(ut.TestCase):
 
   def ShutdownBot(self):
     if self.bot:
-      # TODO Instead of killing the process, signal to the bot that it should shutdown. Also, remove the manual DB manipulation
-      if self.bot:
-        self.TerminateBot()
+      self.TerminateBot()
       self.WaitForBotShutdown()
       self.bot = None
-
-  def TerminateBot(self):
-    assert False
 
   def WaitForBotShutdown(self):
     waited = 0
@@ -296,16 +210,106 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
       assert len(messages) == expectedNewMessageCount
       # TODO Fully verify the release notes message(s)
 
-  def DidTestPass(self):
-    if hasattr(self, '_outcome'):  # Python 3.4+
-        result = self.defaultTestResult()  # These two methods have no side effects
-        self._feedErrorsToResult(result, self._outcome.errors)
-    else:  # Python 2.7, 3.0 - 3.3
-        result = getattr(self, '_outcomeForDoCleanups', self._resultForDoCleanups)
-    error = self.TestIssuesToReason(result.errors)
-    failure = self.TestIssuesToReason(result.failures)
-    return not error and not failure
+  def TestStartup(self):
+    self.TestVirgin()
+    self.TestStandardRestart()
+    self.TestMissingChannels()
+    self.TestMissingRoles()
+    self.TestPreExistingChannels()
 
-  def TestIssuesToReason(self, issuesList):
-      if issuesList and issuesList[-1][0] is self:
-          return issuesList[-1][1]
+  def TestVirgin(self):
+    log.Info("Testing virgin startup")
+    self.VerifyClean()
+    self.StartupVerifyShutdown()
+
+  def TestStandardRestart(self):
+    preRestartDiscordObjects = self.LocateDiscordObjects()
+    self.RunAndWaitForBot()
+    self.VerifyStandardRestart(preRestartDiscordObjects)
+    self.ShutdownBot()
+
+  def TestMissingChannels(self):
+    for channelName in testCfg.cChannelNames:
+      log.Info("Testing startup with missing `#{}`".format(channelName))
+      self.client.DeleteChannel(channelName)
+      self.StartupVerifyShutdown()
+
+  def TestMissingRoles(self):
+    for roleName in [ testCfg.cAmongUsRoleName ]:
+      log.Info("Testing startup with missing `@{}`".format(roleName))
+      self.client.DeleteRole(roleName)
+      self.StartupVerifyShutdown()
+
+  def TestPreExistingChannels(self):
+    log.Info("Testing startup with existing channels")
+    channels = {}
+    oldMessages = {}
+    tasks = []
+    for channel in self.client.client.guilds[0].channels:
+      if channel.name in testCfg.cChannelNames:
+        channels[channel.id] = channel
+        tasks.append(self.TestPreExistingChannel(oldMessages, channel))
+    Util.WaitForTasks(self.loop, tasks)
+    log.Info("Verifying that the expected channels were found")
+    self.assertEqual(len(testCfg.cChannelNames), len(channels))
+    self.assertEqual(len(testCfg.cChannelNames), len(oldMessages))
+    log.Info("Starting bot")
+    self.StartupVerify()
+    log.Info("Verifying that the pre-existing channels still exist")
+    self.assertTrue(all(channelID in tu.GetIDDict(self.client.FetchChannels()) for channelID in channels))
+    log.Info("Verifying that the pre-existing messages still exist")
+    for channelID in channels:
+      log.Info("Verifying that `#{}`'s messages were preserved".format(channels[channelID].name))
+      self.loop.run_until_complete(channels[channelID].fetch_message(oldMessages[channelID].id))
+      # FUTURE Verify more messages
+      # Reaching here means the message was preserved
+    self.ShutdownBot()
+
+  async def TestPreExistingChannel(self, oldMessages, channel):
+    oldMessages[channel.id] = await channel.send(content="test message")
+
+  def TestPreExistingRoles(self):
+    log.Info("Testing startup with existing channels")
+    roles = {}
+    oldMembers = {}
+    addedMembers = {}
+    try:
+      for role in self.client.client.guilds[0].roles:
+        if role.name in testCfg.cRoleNames:
+          roles[role.id] = role
+          # Ensure that the role has at least one member aside from the bot
+          if len(role.members) < 2:
+            for member in self.client.client.guilds[0].members:
+              if member.id != role.members[0].id:
+                self.loop.run_until_complete(
+                  member.add_roles(
+                    role,
+                    reason="Need 1+ non-bot member of `@{}` for testing purposes; adding `@{}`".format(
+                      role.name,
+                      member.name)))
+                addedMembers[role.id] = member
+                break
+          oldMembers[role.id] = role.members
+          self.assertGreater(len(role.members), 1)
+      log.Info("Verifying that the expected roles were found")
+      self.assertEqual(len(testCfg.cRoleNames), len(roles))
+      self.assertEqual(len(testCfg.cRoleNames), len(oldMembers))
+      log.Info("Starting bot")
+      self.StartupVerify()
+      log.Info("Verifying that the pre-existing roles still exist")
+      self.assertTrue(all(roleID in tu.GetIDDict(self.client.FetchRoles()) for roleID in roles))
+      log.Info("Verifying that the pre-existing role members are still role members")
+      log.Info("Testing that all of `@{}`'s members were preserved".format(role.name))
+      self.assertTrue(all(member.id in tu.GetIDDict(role.members) for member in oldMembers[role.id] for role in roles))
+      self.ShutdownBot()
+    finally:
+      try:
+        for roleID in addedMembers:
+          self.client.RemoveMemberRole(
+            member=addedMembers[roleID],
+            role=roles[roleID],
+            reason="Cleanup: removing `@{}` from `@{}`".format(addedMembers[roleID].name, roles[roleID].name))
+      except Exception as e:
+        log.Warn("Error during cleanup: {}".format(e))
+      except:
+        log.Warn("Error during cleanup.")

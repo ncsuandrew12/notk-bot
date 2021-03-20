@@ -24,6 +24,11 @@ class Database:
     self.connection.get_warnings = True
     self.cursor = self.connection.cursor(buffered=True)
 
+  def Close(self):
+    self.cursor = None
+    self.connection.close()
+    self.connection = None
+
   def Execute(self, sqlStatement, sqlParams=None):
     # log.Debug("Executing SQL statement: {}".format(sqlStatement))
     sqlIter = self.cursor.execute(sqlStatement, sqlParams)
@@ -77,7 +82,8 @@ class Database:
   def ShutdownBot(self, botID):
     sqlParams = { "botID" : botID }
     self.Execute("UPDATE botStatus SET status = 'OFFLINE' WHERE id=%(botID)s", sqlParams)
-    return self.cursor.rowcount < 1
+    self.Execute("SELECT * FROM botStatus WHERE id = %(botID)s AND status = 'OFFLINE'", sqlParams)
+    return self.cursor.rowcount > 0
 
   def GetBotStatus(self, botID):
     # TODO Make bot status enum

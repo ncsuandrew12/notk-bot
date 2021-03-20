@@ -15,7 +15,7 @@ class BotTesterProcess(BotTester):
     # TODO show output based on command-line parameters passed to UT
     # TODO handle errors
     # TODO Possible to run in a thread with its own async loop?
-    self.bot = asyncio.run(asyncio.create_subprocess_exec("python3", "main.py"))
+    return asyncio.run(asyncio.create_subprocess_exec("python3", "main.py"))
       # stdout=asyncio.subprocess.PIPE,
       # stderr=asyncio.subprocess.PIPE)
 

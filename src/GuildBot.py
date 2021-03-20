@@ -43,7 +43,7 @@ class GuildBot:
   async def Startup(self):
     self.database.StartBot(self.guild.id)
 
-    ctx = ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
+    ctx = self.GetContextStubbed()
 
     dlog.Debug(ctx, "Starting {} (before channel located)".format(__name__))
 
@@ -69,10 +69,13 @@ class GuildBot:
         continue
       dlog.SInfo(ctx, 'Found: `@{}`'.format(role.name))
 
+  def GetContextStubbed(self):
+    return ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
+
   async def Setup(self):
     roleMod = None
 
-    ctx = ContextStubbed(self.guild, AuthorStubbed(self.guild.name))
+    ctx = self.GetContextStubbed()
 
     dlog.SInfo(ctx, "Starting {}".format(__name__))
 
@@ -324,8 +327,8 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
 
     await dlog.Info(self, ctx, "{} started.".format(__name__))
 
-  async def Shutdown(self):
-    dlog.SInfo(ctx, "Shutting down.")
+  def Shutdown(self):
+    dlog.SInfo(self.GetContextStubbed(), "Shutting down.")
     return self.database.ShutdownBot(self.guild.id)
 
   async def Command(self, ctx, cmd, *args):

@@ -1,6 +1,7 @@
 # Standard
 import asyncio
 import inspect
+import traceback
 from inspect import currentframe, getframeinfo
 
 # Modules
@@ -29,20 +30,31 @@ class GuildBotManager:
     self.loop = loop
     self.database = Database(self.loop)
 
-  def Run(self):
+  def Start(self):
     log.Info("Starting up")
     self.database.Connect()
     self.database.Setup()
     self.guildBots = {}
     self.loop.create_task(discordBot.start(self.token))
 
+  def Run(self):
+    try:
+      self.Start()
+      self.WaitUntilReady()
+      self.StartGuildBots()
+      self.SetupGuildBots()
+    except Exception as e:
+      log.Err("Error while running bot: {}".format(e))
+      self.Shutdown()
+      raise
+    except:
+      log.Err("Error while running bot!")
+      self.Shutdown()
+      raise
+
   def RunForever(self):
     try:
       self.Run()
-      self.WaitUntilReady()
-      self.OnReady()
-      self.StartGuildBots()
-      self.SetupGuildBots()
       self.loop.run_forever()
     except Exception as e:
       log.Err("Error while running bot: {}".format(e))
@@ -55,32 +67,29 @@ class GuildBotManager:
 
   def Shutdown(self):
     log.Debug("Shutting down")
-    tasks = []
-    for guild in discordBot.guilds:
-      tasks.append(self.ShutdownGuild(guild.id))
-    Util.WaitForTasks(self.loop, tasks)
     try:
-      self.loop.run_until_complete(discordBot.close())
+      for guild in discordBot.guilds:
+        self.ShutdownGuild(guild)
+      self.guildBots = {}
+      if not discordBot.is_closed():
+        self.loop.run_until_complete(discordBot.close())
       discordBot.clear()
+      self.database.Close()
     except Exception as e:
       log.Err("Error while closing Discord command Bot: {}".format(e))
+      raise
     except:
       log.Err("Error while closing Discord command Bot!")
-    self.guildBots = {}
-    try:
-      self.loop.close()
-    except Exception as e:
-      log.Err("Error while closing loop: {}".format(e))
-    except:
-      log.Err("Error while closing loop!")
+      raise
 
-  async def ShutdownGuild(self, guildID):
+  def ShutdownGuild(self, guild):
     try:
-      shutdown = await self.guildBots[guildID].Shutdown()
+      shutdown = self.guildBots[guild.id].Shutdown()
       if not shutdown:
         Error.Err("Failed to update {}'s status (shutdown)".format(guild.name))
     except Exception as e:
       log.Err("Error while shutting down {}'s bot: {}".format(guild.name, e))
+      traceback.print_exc()
     except:
       log.Err("Error while shutting down {}'s bot!".format(guild.name))
 
@@ -89,12 +98,10 @@ class GuildBotManager:
     self.loop.run_until_complete(discordBot.wait_until_ready())
     log.Info("Bot is ready")
 
-  def OnReady(self):
+  def StartGuildBots(self):
     for guild in discordBot.guilds:
       guildBot = GuildBot(discordBot, guild, self.loop, self.database)
       self.guildBots[guild.id] = guildBot
-
-  def StartGuildBots(self):
     log.Debug("Starting {} {}".format(len(discordBot.guilds), GuildBot.__name__))
     tasks = []
     for guild in discordBot.guilds:
