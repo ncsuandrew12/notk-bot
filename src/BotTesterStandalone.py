@@ -9,7 +9,7 @@ import TestUtil as tu
 
 from BotTester import BotTester
 
-class BotTesterProcess(BotTester):
+class BotTesterStandalone(BotTester):
 
   def LaunchBot(self):
     # TODO show output based on command-line parameters passed to UT

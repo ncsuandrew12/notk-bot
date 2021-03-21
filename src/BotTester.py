@@ -6,6 +6,7 @@ from datetime import datetime
 
 # Local
 import Error
+import GuildBotManager
 import Logging as log
 import TestClient
 import TestUtil as tu
@@ -215,6 +216,9 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
           log.Warn("Message: {}: {}".format(message.created_at, message.content))
       assert len(messages) == expectedNewMessageCount
       # TODO Fully verify the release notes message(s)
+
+  def GetGuildBot(self):
+    return GuildBotManager.notkBot.guildBots[self.client.client.guilds[0].id]
 
   def TestStartup(self):
     self.TestVirgin()

@@ -7,39 +7,65 @@ from datetime import datetime
 import GuildBotManager
 import Logging as log
 import TestUtil as tu
-from BotTesterThread import BotTesterThread
+from BotTesterInProcess import BotTesterInProcess
 from TestConfig import testCfg
 
-class StartupTestThread(BotTesterThread):
+class CommandTest(BotTesterInProcess):
 
   def setUp(self):
-    BotTesterThread.setUp(self)
+    BotTesterInProcess.setUp(self)
     self.RunAndWaitForBot()
+    self.guildBot = self.GetGuildBot()
 
   def TestAmongUsCommandJoin(self, dObjs):
+    users = []
+    expectedUsersInRole = [self.guildBot.bot.user]
+    expectedUserMessages = [self.guildBot.bot.user]
+    self.TestAmongUsCommandJoinPermutation(dObjs, users, expectedUsersInRole, expectedUserMessages)
+    expectedUserMessages = []
+    self.TestAmongUsCommandJoinPermutation(dObjs, users, expectedUsersInRole, expectedUserMessages)
+
+  def TestAmongUsCommandJoinPermutation(self, dObjs, users, expectedUsersInRole, expectedUserMessages):
     preCommandTime = datetime.utcnow()
-    ctx = GuildBotManager.notkBot.guildBots[self.client.client.guilds[0].id].GetContextStubbed()
-    self.loop.run_until_complete(self.loop.create_task(GuildBotManager.notkBot.Command(ctx, testCfg.cCommandJoin)))
+    ctx = self.guildBot.GetContextStubbed()
+    args = []
+    expectedMessages = []
+    for user in users:
+      args.append(user.mention)
+    actualExpectedUsersInRole = []
+    self.loop.run_until_complete(self.loop.create_task(GuildBotManager.notkBot.Command(ctx, testCfg.cCommandJoin, *args)))
+    log.Info("Testing that all expected role members are enrolled: {}: {}".format(
+      self.guildBot.roleAmongUs.id,
+      actualExpectedUsersInRole))
+    for user in expectedUsersInRole:
+      actualExpectedUsersInRole.append(self.loop.run_until_complete(self.guildBot.guild.fetch_member(user.id)))
+    for user in actualExpectedUsersInRole:
+      log.Info("Testing that {} is enrolled in {}:\n{}".format(user, self.guildBot.roleAmongUs.id, tu.GetIDDict(user.roles)))
+      self.assertTrue(self.guildBot.roleAmongUs.id in tu.GetIDDict(user.roles))
     self.client.FetchChannels()
+    for user in expectedUserMessages:
+      expectedMessages.append([
+        user,
+        "Hey `@among-us-test` players! {} is now among the Among Us players!".format(
+          self.loop.run_until_complete(self.guildBot.guild.fetch_member(user.id)).mention)])
     messages = self.client.FetchMessageHistoryAndFlatten(
       channel=self.client.channelsByName[testCfg.cBotChannelName],
       limit=None,
       after=preCommandTime,
       oldestFirst=True)
-    # TODO Verify message response
-    foundResponse = False
+    log.Info("Testing that expected messages were sent: {}, {}".format(expectedMessages, messages))
+    self.assertEquals(len(messages), len(expectedUserMessages))
+    foundMessages = []
     for message in messages:
       log.Debug("Checking message: `@{}` @{}: {}".format(message.author.name, message.created_at, message.content))
-      foundResponse = ((message.author.id == ctx.author.id) and
-        (message.content ==
-          "Hey `@among-us-test` players! {} is now among the Among Us players!".format(ctx.author.mention)))
-      if (foundResponse):
+      for expectedMessage in expectedMessages:
+        if (message.author.id == expectedMessage[0].id) and (message.content == expectedMessage[1]):
+          foundMessages.append(message.content)
+    for expectedMessage in expectedMessages:
+      if not expectedMessage[1] in foundMessages:
+        self.fail()
         break
-    self.assertTrue(foundResponse)
-      # TODO Verify that member gained the role
-      # TODO Verify that the bot responded with an announcement
-      # TODO Verify that the user was sent a private message
-    # TODO Test when a player adds themself without tagging themself
+    # FUTURE Verify that the user was sent a private message?
     # TODO Test when a player adds another player
     # TODO Test when a player adds an invalid player
     # TODO Test when a player adds already-added players (self/others)

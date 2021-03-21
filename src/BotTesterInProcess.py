@@ -11,8 +11,7 @@ import TestUtil as tu
 from BotTester import BotTester
 import GuildBotManager
 
-
-class BotTesterThread(BotTester):
+class BotTesterInProcess(BotTester):
 
   def LaunchBot(self):
     GuildBotManager.notkBot.Run()

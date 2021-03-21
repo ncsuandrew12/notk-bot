@@ -1,11 +1,11 @@
 # Local
-from BotTesterProcess import BotTesterProcess
-from BotTesterThread import BotTesterThread
+from BotTesterStandalone import BotTesterStandalone
+from BotTesterInProcess import BotTesterInProcess
 
-class StartupTestProcess(BotTesterProcess):
+class StartupTestStandalone(BotTesterStandalone):
   def testStartup(self):
     self.TestStartup()
 
-class StartupTestThread(BotTesterThread):
+class StartupTestInProcess(BotTesterInProcess):
   def testStartup(self):
     self.TestStartup()
