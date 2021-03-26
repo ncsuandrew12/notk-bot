@@ -96,7 +96,7 @@ class GuildBotManager:
   def WaitUntilReady(self):
     log.Info("Waiting until ready")
     self.loop.run_until_complete(discordBot.wait_until_ready())
-    log.Info("Bot is ready")
+    log.Info("{} is ready".format(commands.Bot.__name__))
 
   def StartGuildBots(self):
     for guild in discordBot.guilds:
@@ -105,8 +105,8 @@ class GuildBotManager:
     log.Debug("Starting {} {}".format(len(discordBot.guilds), GuildBot.__name__))
     tasks = []
     for guild in discordBot.guilds:
-      tasks.append(self.loop.create_task(self.guildBots[guild.id].Startup()))
-    Util.WaitForTasks(self.loop, tasks)
+      tasks.append(self.guildBots[guild.id].Startup())
+    self.loop.run_until_complete(asyncio.gather(*tasks))
     log.Debug("{} {} running".format(len(self.guildBots), GuildBot.__name__))
 
   def SetupGuildBots(self):
@@ -114,14 +114,14 @@ class GuildBotManager:
     tasks = []
     for guild in discordBot.guilds:
       tasks.append(self.guildBots[guild.id].Setup())
-    Util.WaitForTasks(self.loop, tasks)
+    self.loop.run_until_complete(asyncio.gather(*tasks))
     log.Debug("{} guilds set up".format(len(self.guildBots)))
 
   async def Command(self, ctx, cmd, *args):
     log.Debug("Command: {} {}".format(cmd, " ".join(args)))
     try:
       if ctx.guild.id not in self.guildBots:
-        await Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
+        Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
           ctx.guild.name,
           "andrewf#6219"))
 

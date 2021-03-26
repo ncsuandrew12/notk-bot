@@ -2,6 +2,7 @@
 import asyncio
 import time
 import unittest as ut
+from abc import ABCMeta, abstractmethod
 from datetime import datetime
 
 # Local
@@ -13,9 +14,14 @@ import TestUtil as tu
 import Util
 from TestConfig import testCfg
 
-class BotTester(ut.TestCase):
+class BotTester(ut.TestCase, metaclass=ABCMeta):
 
-  def setUp(self):
+  guild = None
+  guildBot = None
+  otherMember = None
+  user = None
+
+  def SetUpTester(self):
     self.bot = None
     self.botLaunchTime = None
     try:
@@ -28,57 +34,50 @@ class BotTester(ut.TestCase):
     self.client.database.Clear()
     self.client.Run()
     self.client.WaitUntilReady()
+    self.guild = self.client.client.guilds[0]
     self.client.ResetGuild()
     self.client.Setup()
 
-  def tearDown(self):
+  def TearDownTester(self):
     try:
       self.TerminateBot()
     except:
       # TODO Log a warning if-and-only-if the bot wasn't already killed by the test
       pass
-    if self.DidTestPass():
-      self.client.database.Clear()
-      self.client.ResetGuild()
-      self.client.Shutdown()
+    self.client.database.Clear()
+    self.client.ResetGuild()
+    self.client.Shutdown()
 
+  @abstractmethod
   def TerminateBot(self):
-    assert False
-
-  def DidTestPass(self):
-    if hasattr(self, '_outcome'):  # Python 3.4+
-        result = self.defaultTestResult()  # These two methods have no side effects
-        self._feedErrorsToResult(result, self._outcome.errors)
-    else:  # Python 2.7, 3.0 - 3.3
-        result = getattr(self, '_outcomeForDoCleanups', self._resultForDoCleanups)
-    error = self.TestIssuesToReason(result.errors)
-    failure = self.TestIssuesToReason(result.failures)
-    return not error and not failure
-
-  def TestIssuesToReason(self, issuesList):
-      if issuesList and issuesList[-1][0] is self:
-          return issuesList[-1][1]
+    pass
 
   def RunAndWaitForBot(self):
     self.RunBot()
     self.WaitForBot()
+    self.otherMember = None
+    for member in self.loop.run_until_complete(self.guild.fetch_members().flatten()):
+      if not member.id == self.client.client.user.id and member.bot: # Avoid tagging/messaging actual users.
+        self.otherMember = member
+    assert bool(self.otherMember)
 
   def RunBot(self):
     assert not self.bot
     self.botLaunchTime = datetime.utcnow()
     self.bot = self.LaunchBot()
 
+  @abstractmethod
   def LaunchBot(self):
-    assert False
+    pass
 
   def WaitForBot(self):
-    time.sleep(9)
-    waited = 9
+    time.sleep(5)
+    waited = 5
     while True:
       if waited >= 30:
-        Error.Err("Timed out waiting for {}'s bot to come online.".format(self.client.client.guilds[0].name))
+        Error.Err("Timed out waiting for {}'s bot to come online.".format(self.guild.name))
       try:
-        if self.client.database.GetBotStatus(self.client.client.guilds[0].id) == "RUNNING":
+        if self.client.database.GetBotStatus(self.guild.id) == "RUNNING":
           break
       except Exception as e:
         log.Debug("{}".format(e))
@@ -94,9 +93,9 @@ class BotTester(ut.TestCase):
 
   def WaitForBotShutdown(self):
     waited = 0
-    while self.client.database.GetBotStatus(self.client.client.guilds[0].id) != "OFFLINE":
+    while self.client.database.GetBotStatus(self.guild.id) != "OFFLINE":
       if waited > 20:
-        Error.Err("Timed out while waiting for {}'s bot to shutdown.".format(self.client.client.guilds[0].name))
+        Error.Err("Timed out while waiting for {}'s bot to shutdown.".format(self.guild.name))
       time.sleep(1)
       waited += 1
 
@@ -204,7 +203,7 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
     log.Info("Verifying channels' content.")
     for channelName in testCfg.cChannelNames:
       log.Info("Verifying `#{}`. ({})".format(channelName, self.botLaunchTime))
-      assert channelName in oldObjs.channelsByName
+      self.assertTrue(channelName in oldObjs.channelsByName)
       channel = oldObjs.channelsByName[channelName]
       messages = self.client.FetchMessageHistoryAndFlatten(channel=channel, limit=1, after=self.botLaunchTime)
       expectedNewMessageCount = 0
@@ -214,11 +213,49 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
         log.Warn("Unexpected message count: {} != {}".format(len(messages), expectedNewMessageCount))
         for message in messages:
           log.Warn("Message: {}: {}".format(message.created_at, message.content))
-      assert len(messages) == expectedNewMessageCount
+      self.assertEqual(len(messages), expectedNewMessageCount)
       # TODO Fully verify the release notes message(s)
 
+  def VerifyExpectedUserMessages(self, actualMessages, expectedUsers, expectedMessageFormatsAllUsers, expectedMessageFormatsPerUser):
+    dataAllUsers = tu.Container()
+    dataAllUsers.amongUsRoleName = testCfg.cAmongUsRoleName
+    dataAllUsers.guild = self.guild
+    dataAllUsers.botUser = self.loop.run_until_complete(dataAllUsers.guild.fetch_member(self.user.id))
+    mappedUsers = []
+    expectedMessages = []
+    for user in expectedUsers:
+      dataPerUser = tu.Container()
+      if user == "invalid":
+        dataPerUser.user = dataAllUsers.botUser
+      else:
+        dataPerUser.user = self.loop.run_until_complete(dataAllUsers.guild.fetch_member(user.id))
+      mappedUsers.append(dataPerUser.user)
+      dataPerUser.amongUsRoleName = dataAllUsers.amongUsRoleName
+      dataPerUser.botUser = dataAllUsers.botUser
+      dataPerUser.guild = dataAllUsers.guild
+      for msg in expectedMessageFormatsPerUser:
+        expectedMessages.append(msg.format(data=dataPerUser))
+    dataAllUsers.userNamesTicked = "`@{}`".format("`, `@".join(tu.GetNameList(mappedUsers)))
+    for msg in expectedMessageFormatsAllUsers:
+      expectedMessages.append(msg.format(data=dataAllUsers))
+    log.Info("Testing that expected messages were sent: expected={}, actual={}".format(expectedMessages, actualMessages))
+    assert len(expectedMessages) == (len(expectedMessageFormatsAllUsers) + (len(expectedMessageFormatsPerUser) * len(expectedUsers)))
+    foundMessages = []
+    for message in actualMessages:
+      found = False
+      msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
+      for expectedMessage in expectedMessages:
+        if (message.author.id == dataAllUsers.botUser.id) and (message.content == expectedMessage):
+          log.Debug("Found matching message: {}".format(msgLogDescription))
+          found = True
+          foundMessages.append(message.content)
+      if not found:
+        log.Debug("Ignoring non-matching message: {}".format(msgLogDescription))
+    for expectedMessage in expectedMessages:
+      self.assertTrue(expectedMessage in foundMessages)
+
   def GetGuildBot(self):
-    return GuildBotManager.notkBot.guildBots[self.client.client.guilds[0].id]
+    return GuildBotManager.notkBot.guildBots[self.guild.id]
 
   def TestStartup(self):
     self.TestVirgin()
@@ -241,13 +278,13 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
   def TestMissingChannels(self):
     for channelName in testCfg.cChannelNames:
       log.Info("Testing startup with missing `#{}`".format(channelName))
-      self.client.DeleteChannel(channelName)
+      self.client.DeleteChannelByName(channelName)
       self.StartupVerifyShutdown()
 
   def TestMissingRoles(self):
     for roleName in [ testCfg.cAmongUsRoleName ]:
       log.Info("Testing startup with missing `@{}`".format(roleName))
-      self.client.DeleteRole(roleName)
+      self.client.DeleteRoleByName(roleName)
       self.StartupVerifyShutdown()
 
   def TestPreExistingChannels(self):
@@ -255,11 +292,11 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
     channels = {}
     oldMessages = {}
     tasks = []
-    for channel in self.client.client.guilds[0].channels:
+    for channel in self.guild.channels:
       if channel.name in testCfg.cChannelNames:
         channels[channel.id] = channel
         tasks.append(self.TestPreExistingChannel(oldMessages, channel))
-    Util.WaitForTasks(self.loop, tasks)
+    self.loop.run_until_complete(asyncio.gather(*tasks))
     log.Info("Verifying that the expected channels were found")
     self.assertEqual(len(testCfg.cChannelNames), len(channels))
     self.assertEqual(len(testCfg.cChannelNames), len(oldMessages))
@@ -285,12 +322,12 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
     oldMembers = {}
     addedMembers = {}
     try:
-      for role in self.client.client.guilds[0].roles:
+      for role in self.guild.roles:
         if role.name in testCfg.cRoleNames:
           roles[role.id] = role
           # Ensure that the role has at least one member aside from the bot
           if len(role.members) < 2:
-            for member in self.client.client.guilds[0].members:
+            for member in self.guild.members:
               if member.id != role.members[0].id:
                 self.loop.run_until_complete(
                   member.add_roles(

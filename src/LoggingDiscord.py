@@ -1,19 +1,19 @@
 # Local
 import Logging as log
 
-async def DLog(guildBot, ctx, lvl, msg):
+def DLog(guildBot, ctx, lvl, msg):
   SLog(ctx, lvl, msg)
   if bool(guildBot.channelLog):
-    await guildBot.channelLog.send(content="{}: {}: {}".format(lvl, ctx.author.name, msg))
+    guildBot.loop.create_task(guildBot.channelLog.send(content="{}: {}: {}".format(lvl, ctx.author.name, msg)))
 
-async def Err(guildBot, ctx, msg):
-  await SLogSevere(guildBot, ctx, "ERROR", msg)
+def Err(guildBot, ctx, msg):
+  SLogSevere(guildBot, ctx, "ERROR", msg)
 
-async def Warn(guildBot, ctx, msg):
-  await SLogSevere(guildBot, ctx, "WARNING", msg)
+def Warn(guildBot, ctx, msg):
+  SLogSevere(guildBot, ctx, "WARNING", msg)
 
-async def Info(guildBot, ctx, msg):
-  await DLog(guildBot, ctx, "INFO", msg)
+def Info(guildBot, ctx, msg):
+  DLog(guildBot, ctx, "INFO", msg)
 
 def Debug(ctx, msg):
   SDebug(ctx, msg)
@@ -21,16 +21,16 @@ def Debug(ctx, msg):
 def SLog(ctx, lvl, msg):
   log.Log(lvl, "{}.{}: {}".format(ctx.guild.name, ctx.author.name, msg))
 
-async def SLogSevere(guildBot, ctx, lvl, msg):
+def SLogSevere(guildBot, ctx, lvl, msg):
   SLog(ctx, lvl, msg)
   if bool(guildBot.channelLog):
-    await guildBot.channelLog.send(\
-      content="{}: {}: {}".format(\
-        ctx.author.mention if bool(ctx.author.mention) else ctx.author.name,\
+    guildBot.loop.create_task(guildBot.channelLog.send(
+      content="{}: {}: {}".format(
+        ctx.author.mention if bool(ctx.author.mention) else ctx.author.name,
         lvl,
-        msg))
+        msg)))
   elif not ctx.author.bot:
-    await ctx.author.send(msg)
+    guildBot.loop.create_task(ctx.author.send(msg))
 
 def SErr(ctx, msg):
   SLog(ctx, "ERROR", msg)

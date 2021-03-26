@@ -1,4 +1,5 @@
 # Standard
+import asyncio
 import argparse
 
 from inspect import currentframe, getframeinfo
@@ -35,23 +36,44 @@ class TestClient:
     log.Debug("Shutting down")
     self.loop.run_until_complete(self.client.logout()) #close?
 
+  def FetchStuff(self):
+    tasks = []
+    tasks.append(self.loop.create_task(self.FetchChannelsAsync()))
+    tasks.append(self.loop.create_task(self.FetchMembersAsync()))
+    tasks.append(self.loop.create_task(self.FetchRolesAsync()))
+    self.loop.run_until_complete(asyncio.gather(*tasks))
+
   def FetchChannels(self):
-    channels = self.loop.run_until_complete(self.client.guilds[0].fetch_channels())
-    self.channelsByID = tu.GetIDDict(channels)
-    self.channelsByName = tu.GetNameDict(channels)
-    return channels
+    self.loop.run_until_complete(self.FetchChannelsAsync())
+    return self.channels
 
-  def FetchMembersAndFlatten(self, limit=1000):
-    return self.loop.run_until_complete(self.FetchMembersAndFlattenAsync(limit=limit))
+  async def FetchChannelsAsync(self):
+    self.channels = await self.client.guilds[0].fetch_channels()
+    self.channelsByID = tu.GetIDDict(self.channels)
+    self.channelsByName = tu.GetNameDict(self.channels)
 
-  async def FetchMembersAndFlattenAsync(self, limit=1000):
-    return await self.client.guilds[0].fetch_members(limit=limit).flatten()
+  def FetchMembers(self, limit=None, role=None):
+    self.loop.run_until_complete(asyncio.gather(self.FetchMembersAsync(limit=limit)))
+    if role == None:
+      return self.members
+    members = []
+    for member in self.members:
+      if role.id in tu.GetIDDict(member.roles):
+        members.append(member)
+    return members
+
+  async def FetchMembersAsync(self, limit=None):
+    self.members = await self.client.guilds[0].fetch_members(limit=limit).flatten()
+    self.membersByID = tu.GetIDDict(self.members)
 
   def FetchRoles(self):
-    roles = self.loop.run_until_complete(self.client.guilds[0].fetch_roles())
-    self.rolesByID = tu.GetIDDict(roles)
-    self.rolesByName = tu.GetNameDict(roles)
-    return roles
+    self.loop.run_until_complete(self.FetchRolesAsync())
+    return self.channels
+
+  async def FetchRolesAsync(self):
+    self.roles = await self.client.guilds[0].fetch_roles()
+    self.rolesByID = tu.GetIDDict(self.roles)
+    self.rolesByName = tu.GetNameDict(self.roles)
 
   def FetchMessageHistoryAndFlatten(self, channel, limit=100, before=None, after=None, oldestFirst=None):
     return self.loop.run_until_complete(
@@ -70,48 +92,57 @@ class TestClient:
       after=after,
       oldest_first=oldestFirst).flatten()
 
-  def RemoveMemberRole(self, member, role, reason = None):
+  def RemoveAllMembersFromRole(self, role, reason = None):
+    log.Debug("Removing all members from role: {}".format(role.name))
+    self.RemoveMembersFromRole(role, self.FetchMembers(role=role), reason=reason)
+
+  def RemoveMembersFromRole(self, role, members, reason = None):
+    tasks = []
+    for member in members:
+      tasks.append(member.remove_roles(role, reason=reason))
+    self.loop.run_until_complete(asyncio.gather(*tasks))
+
+  def RemoveMemberFromRole(self, role, member, reason = None):
     return self.loop.run_until_complete(member.remove_roles(role, reason=reason))
 
   def CreateChannel(self, name, topic = None, reason = None):
     return self.loop.run_until_complete(
       self.client.guilds[0].create_text_channel(name=name, topic=topic, reason=reason))
 
-  def DeleteChannel(self, channelName):
-    self.DeleteChannels([channelName])
+  def DeleteChannelByName(self, channelName):
+    self.loop.run_until_complete(asyncio.gather(*self.DeleteChannels([channelName])))
 
   def DeleteChannels(self, channelNames):
-    self.FetchChannels()
-    self.DeleteByKey(self.channelsByName, channelNames)
+    return self.DeleteByKey(self.channelsByName, channelNames)
 
   def DeleteChannelsByID(self, channelIDs):
-    self.FetchChannels()
-    self.DeleteByKey(self.channelsByID, channelIDs)
+    return self.DeleteByKey(self.channelsByID, channelIDs)
 
-  def DeleteRole(self, roleName):
-    self.DeleteRoles([roleName])
+  def DeleteRoleByName(self, roleName):
+    self.loop.run_until_complete(asyncio.gather(*self.DeleteRoles([roleName])))
 
   def DeleteRoles(self, roleNames):
-    self.FetchRoles()
-    self.DeleteByKey(self.rolesByName, roleNames)
+    return self.DeleteByKey(self.rolesByName, roleNames)
 
   def DeleteByKey(self, objects, keys):
     delKeys = []
     for key in objects:
       if key in keys:
         delKeys.append(key)
+    tasks = []
     for key in delKeys:
       log.Info("Deleting {} ({})".format(objects[key].name, key))
-      self.loop.run_until_complete(objects[key].delete())
+      tasks.append(self.loop.create_task(objects[key].delete()))
       del objects[key]
+    return tasks
 
   def ResetGuild(self):
     log.Info("Resetting guild")
     # Do this instead of looping on DeleteChannel for efficiency
-    self.DeleteChannels(testCfg.cTestChannelNames)
-    self.DeleteChannels(testCfg.cChannelNames)
-    self.DeleteRoles(testCfg.cRoleNames)
-    self.FetchChannels()
+    self.FetchStuff()
+    tasks = self.DeleteChannels(testCfg.cTestChannelNames + testCfg.cChannelNames) + self.DeleteRoles(testCfg.cRoleNames)
+    self.loop.run_until_complete(asyncio.gather(*tasks))
+    self.FetchStuff()
     if testCfg.cTestChannelName in self.channelsByName:
       self.testChannel = self.channelsByName[testCfg.cTestChannelName]
     log.Info("Guild reset")

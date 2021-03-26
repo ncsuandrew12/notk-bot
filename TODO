@@ -44,3 +44,5 @@ Technical/development TODOs:
 -Detect when an important role/channel has been deleted and handle robustly
 -During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values.
 -Cleanup unnecessary \s from code
+-Create wrapper around client/bot with additional utility/convenience functions
+-Split test logs out from production logs.

@@ -8,6 +8,13 @@ def GetNameDict(ls, filterNames = None):
       names[entry.name] = entry
   return names
 
+def GetNameList(ls, filterNames = None):
+  names = []
+  for entry in ls:
+    if (not filterNames) or (entry.name in filterNames):
+      names.append(entry.name)
+  return names
+
 def GetIDDict(ls):
   ids = {}
   for entry in ls:

@@ -11,10 +11,10 @@ def Err(msg):
   log.Err(msg)
   raise NotkException(msg)
 
-async def DErr(guildBot, ctx, msg):
-  await dlog.Err(guildBot, ctx, msg)
+def DErr(guildBot, ctx, msg):
+  dlog.Err(guildBot, ctx, msg)
   raise NotkException(msg)
 
-async def ErrMinor(guildBot, ctx, msg):
-  await dlog.Err(guildBot, ctx, msg)
+def ErrMinor(guildBot, ctx, msg):
+  dlog.Err(guildBot, ctx, msg)
   raise MinorException(msg)
