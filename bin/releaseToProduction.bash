@@ -24,8 +24,10 @@ while (( "$#" )); do
     esac
 done
 
-./release.bash "$@"
+${ROOT_DIR}/bin/release.bash "$@"
 
 if [ $dryRun -eq 0 ]; then
-    ./deployToProduction.bash
+    ${ROOT_DIR}/bin/deployToProduction.bash
+
+    ${ROOT_DIR}/bin/startServerProduction.bash
 fi
