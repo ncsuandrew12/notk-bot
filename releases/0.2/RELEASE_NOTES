@@ -1,0 +1,9 @@
+EXTERNAL CHANGES
+-Dramatically reduced logging. Clean restarts now produce a single log message
+
+INTERNAL CHANGES
+-Added some automated testing of the bot startup, installation, and join command.
+-Automated restart of production server when deploying.
+-Added stack information and timestamps to server-side logs (but not logging channel logs)
+-Significant improvements to build, test, and deployment scripts.
+-Improved bot shutdown code robustness
