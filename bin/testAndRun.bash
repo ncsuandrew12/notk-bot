@@ -7,6 +7,6 @@ set -e
 
 ${ROOT_DIR}/bin/test.bash
 
-${ROOT_DIR}/bin/deployToProduction.bash
+# Running UT implicitly deploys to test
 
-${ROOT_DIR}/bin/startServerProduction.bash
+${ROOT_DIR}/bin/startServerTest.bash
