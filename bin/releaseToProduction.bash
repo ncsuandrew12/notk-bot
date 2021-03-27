@@ -13,22 +13,14 @@ while (( "$#" )); do
             dryRun=1
             shift
             ;;
-        --major-release)
-            # Pass through
-            shift
-            ;;
-        --minor-release)
-            # Pass through
-            shift
-            ;;
-        -*|--*=) # unsupported flags
-            >&2 echo "ERROR: Unsupported parameter $1"
-            exit $ERR_BAD_PARAMETER
-            ;;
-        *) # preserve positional arguments
-            >&2 echo "ERROR: Unexpected argument $1"
-            exit $ERR_BAD_ARGUMENT
-            ;;
+        # -*|--*=) # unsupported flags
+        #     >&2 echo "ERROR: Unsupported parameter $1"
+        #     exit $ERR_BAD_PARAMETER
+        #     ;;
+        # *) # preserve positional arguments
+        #     >&2 echo "ERROR: Unexpected argument $1"
+        #     exit $ERR_BAD_ARGUMENT
+        #     ;;
     esac
 done
 

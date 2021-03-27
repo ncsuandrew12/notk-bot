@@ -46,3 +46,4 @@ Technical/development TODOs:
 -Cleanup unnecessary \s from code
 -Create wrapper around client/bot with additional utility/convenience functions
 -Split test logs out from production logs.
+-Solve never-retrieved task exceptions
