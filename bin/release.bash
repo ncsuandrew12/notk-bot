@@ -7,4 +7,4 @@ source "${DIR}/common.bash"
 
 ${ROOT_DIR}/bin/test.bash
 
-${ROOT_DIR}/bin/releaseToProductions.bash "$@"
+${ROOT_DIR}/bin/releaseToProduction.bash "$@"
