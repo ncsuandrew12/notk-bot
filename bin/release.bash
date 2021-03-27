@@ -7,5 +7,4 @@ source "${DIR}/common.bash"
 
 ${ROOT_DIR}/bin/test.bash
 
-echo "will release"
-#${ROOT_DIR}/bin/releaseToProductions.bash "$@"
+${ROOT_DIR}/bin/releaseToProductions.bash "$@"
