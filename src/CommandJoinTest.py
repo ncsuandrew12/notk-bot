@@ -66,17 +66,11 @@ class CommandJoinTest(CommandTest):
         log.debug("Ignoring non-matching message: %s", msgLogDescription)
     log.debug("messagesMain: %s, expectedJoined: %s", messagesMain, expectedJoined)
     self.assertEqual(len(messagesMain), len(expectedJoined))
-    messagesLog2 = self.bt.client.FetchMessageHistoryAndFlatten(
-      channel=self.bt.client.channelsByName[testCfg.cLogChannelName],
-      limit=None,
-      after=preCommandTime,
-      oldestFirst=True)
     self.bt.VerifyExpectedUserMessages(
       messagesMain,
       expectedJoined,
       [],
       ["Hey `@{data.amongUsRoleName}` players! {data.user.mention} is now among the Among Us players!"])
-    # FUTURE Verify users' private messages?
 
   def testAmongUsCommandJoinSelf(self):
     self.TestAmongUsCommandJoin([], [self.bt.guildBot.bot.user], [self.bt.guildBot.bot.user])
