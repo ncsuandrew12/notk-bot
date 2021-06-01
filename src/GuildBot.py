@@ -359,15 +359,12 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     if cmd in [ cfg.cCommandJoin, cfg.cCommandLeave]:
       if len(args) > 0:
         userIDs = {}
-        userNames = []
         for arg in args:
           if arg.startswith('<@') & arg.endswith('>'):
             userID = arg[2:-1]
             while userID.startswith('!') | userID.startswith('&'):
               userID = userID[1:len(userID)]
             userIDs[userID] = arg
-          else:
-            userNames.append(arg)
         for userID in userIDs:
           try:
             member = await logExtra.discordContext.guild.fetch_member(userID)
@@ -386,8 +383,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         memberNames = [member.name]
       missing = set(args) - set(resolved)
       if (len(missing) > 0):
-        log.warning("Could not find `%s` members: `@%s`!", logExtra.discordContext.guild.name, "`, `@".join(missing))
-        dlog.Warn(logExtra, "Could not find members: `@%s`!", "`, `@".join(missing))
+        dlog.Warn(logExtra, "Could not find members: `%s`!", "`, `".join(missing))
 
     if cmd == cfg.cCommandJoin:
       await self.AddAmongUsPlayer(logExtra, members)
@@ -457,6 +453,3 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         code,
         cfg.cAmongUsLeaveRequestMessageText,
         cfg.cAmongUsSendGameNotificationText))
-  #  codeSpelled = re.sub(r"([A-Z])", r"\1 ", code)
-  #  await channel.send(content="New game code: `{}`.".format(codeSpelled),
-  #                     tts=True)
