@@ -50,7 +50,12 @@ if [ $production -eq 1 ] && [[ `echo "$tag" | wc -w` -eq 0 ]]; then
     exit $ERR_NOT_READY
 fi
 
-if [[ ! -e $targetDir ]]; then
+if [[ -e $targetDir ]]; then
+    if [ $production -eq 0 ]; then
+        echo "Deleting log directory if it exists."
+        rm -rf $targetDir/log
+    fi
+else
     mkdir -p $targetDir
     if [ $production -eq 1 ]; then
         sshfs -p $(jq -r ".port" <<< $deploymentJson) `whoami`@$(jq -r ".host" <<< $deploymentJson) $targetDir

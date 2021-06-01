@@ -1,20 +1,20 @@
 # Standard
 
 # Local
+from Logging import logger as log
 from Exceptions import MinorException
 from Exceptions import NotkException
 
 import LoggingDiscord as dlog
-import Logging as log
 
 def Err(msg):
-  log.Err(msg)
+  log.error(msg)
   raise NotkException(msg)
 
-def DErr(guildBot, ctx, msg):
-  dlog.Err(guildBot, ctx, msg)
+def DErr(ctx, msg, *args):
+  dlog.Err(ctx, msg, *args)
   raise NotkException(msg)
 
-def ErrMinor(guildBot, ctx, msg):
-  dlog.Err(guildBot, ctx, msg)
+def ErrMinor(ctx, msg, *args):
+  dlog.Err(ctx, msg, *args)
   raise MinorException(msg)

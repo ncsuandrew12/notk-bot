@@ -5,10 +5,10 @@ from datetime import datetime
 
 # Local
 import GuildBotManager
-import Logging as log
 import TestUtil as tu
 from BotTesterInProcess import BotTesterInProcess
 from CommandTest import CommandTest
+from Logging import logger as log
 from TestConfig import testCfg
 
 class CommandJoinTest(CommandTest):
@@ -30,7 +30,7 @@ class CommandJoinTest(CommandTest):
     expectedUsersInRole,
     expectedJoined):
     preCommandTime = datetime.utcnow()
-    ctx = self.bt.guildBot.GetContextStubbed()
+    ctx = self.bt.guildBot.GetDiscordContextStub()
     args = []
     for user in users:
       if user == "invalid":
@@ -42,12 +42,12 @@ class CommandJoinTest(CommandTest):
     actualExpectedUsersInRole = []
     for user in expectedUsersInRole:
       actualExpectedUsersInRole.append(self.bt.loop.run_until_complete(self.bt.guildBot.guild.fetch_member(user.id)))
-    log.Info("Testing that all expected role members were enrolled: {}: {}".format(
+    log.info("Testing that all expected role members were enrolled: %s: %s",
       self.bt.guildBot.roleAmongUs.id,
-      actualExpectedUsersInRole))
+      actualExpectedUsersInRole)
     for user in actualExpectedUsersInRole:
       userRoles = tu.GetIDDict(user.roles)
-      log.Info("Testing that {} is enrolled in {}:\n{}".format(user, self.bt.guildBot.roleAmongUs.id, userRoles))
+      log.info("Testing that %s is enrolled in %s:\n%s", user, self.bt.guildBot.roleAmongUs.id, userRoles)
       self.assertTrue(self.bt.guildBot.roleAmongUs.id in userRoles)
     self.bt.client.FetchChannels()
     messagesMain2 = self.bt.client.FetchMessageHistoryAndFlatten(
@@ -55,16 +55,16 @@ class CommandJoinTest(CommandTest):
       limit=None,
       after=preCommandTime,
       oldestFirst=True)
-    log.Debug("messagesMain2: {}".format(messagesMain2))
+    log.debug("messagesMain2: %s", messagesMain2)
     messagesMain = []
     for message in messagesMain2:
       msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
       if (message.author.id == self.bt.guildBot.bot.user.id) and (message.created_at >= preCommandTime):
-        log.Debug("Found matching message: {}".format(msgLogDescription))
+        log.debug("Found matching message: %s", msgLogDescription)
         messagesMain.append(message)
       else:
-        log.Debug("Ignoring non-matching message: {}".format(msgLogDescription))
-    log.Debug("messagesMain: {}, expectedJoined: {}".format(messagesMain, expectedJoined))
+        log.debug("Ignoring non-matching message: %s", msgLogDescription)
+    log.debug("messagesMain: %s, expectedJoined: %s", messagesMain, expectedJoined)
     self.assertEqual(len(messagesMain), len(expectedJoined))
     messagesLog2 = self.bt.client.FetchMessageHistoryAndFlatten(
       channel=self.bt.client.channelsByName[testCfg.cLogChannelName],

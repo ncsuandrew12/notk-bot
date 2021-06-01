@@ -1,45 +1,22 @@
+# Standard
+import logging
+
 # Local
-import Logging as log
+from Logging import logger as log
 
-def DLog(guildBot, ctx, lvl, msg):
-  SLog(ctx, lvl, msg)
-  if bool(guildBot.channelLog):
-    guildBot.loop.create_task(guildBot.channelLog.send(content="{}: {}: {}".format(lvl, ctx.author.name, msg)))
+def DLog(ctx, lvl, msg, *args):
+  # The same ctx object is also used for a number of direct logger.<level>() calls which expect serverLog to be False.
+  # Therefore, make a copy of it before modifying serverLog.
+  # TODO Find some way to avoid this and delete these functions.
+  extra = ctx
+  extra.serverLog = True
+  log.log(lvl, msg, *args, extra=extra)
 
-def Err(guildBot, ctx, msg):
-  SLogSevere(guildBot, ctx, "ERROR", msg)
+def Err(ctx, msg, *args):
+  DLog(ctx, logging.ERROR, msg, *args)
 
-def Warn(guildBot, ctx, msg):
-  SLogSevere(guildBot, ctx, "WARNING", msg)
+def Warn(ctx, msg, *args):
+  DLog(ctx, logging.WARNING, msg, *args)
 
-def Info(guildBot, ctx, msg):
-  DLog(guildBot, ctx, "INFO", msg)
-
-def Debug(ctx, msg):
-  SDebug(ctx, msg)
-
-def SLog(ctx, lvl, msg):
-  log.Log(lvl, "{}.{}: {}".format(ctx.guild.name, ctx.author.name, msg))
-
-def SLogSevere(guildBot, ctx, lvl, msg):
-  SLog(ctx, lvl, msg)
-  if bool(guildBot.channelLog):
-    guildBot.loop.create_task(guildBot.channelLog.send(
-      content="{}: {}: {}".format(
-        ctx.author.mention if bool(ctx.author.mention) else ctx.author.name,
-        lvl,
-        msg)))
-  elif not ctx.author.bot:
-    guildBot.loop.create_task(ctx.author.send(msg))
-
-def SErr(ctx, msg):
-  SLog(ctx, "ERROR", msg)
-
-def SWarn(ctx, msg):
-  SLog(ctx, "WARNING", msg)
-
-def SInfo(ctx, msg):
-  SLog(ctx, "INFO", msg)
-
-def SDebug(ctx, msg):
-  SLog(ctx, "DEBUG", msg)
+def Info(ctx, msg, *args):
+  DLog(ctx, logging.INFO, msg, *args)

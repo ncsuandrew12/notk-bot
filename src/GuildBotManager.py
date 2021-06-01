@@ -10,13 +10,14 @@ from discord.ext import commands
 
 # Local
 import Error
-import Logging as log
+import Logging
 import Util
 from Config import cfg
 from Database import Database
-from GuildBot import GuildBot
 from Exceptions import MinorException
 from Exceptions import NotkException
+from GuildBot import GuildBot
+from Logging import logger as log
 
 # Needed to be able to list members (for mapping member name arguments to actual members)
 kIntents = discord.Intents.default()
@@ -31,7 +32,7 @@ class GuildBotManager:
     self.database = Database(self.loop)
 
   def Start(self):
-    log.Info("Starting up")
+    log.info("Starting up")
     self.database.Connect()
     self.database.Setup()
     self.guildBots = {}
@@ -44,11 +45,12 @@ class GuildBotManager:
       self.StartGuildBots()
       self.SetupGuildBots()
     except Exception as e:
-      log.Err("Error while running bot: {}".format(e))
+      log.error("Error while running bot: %s", e)
+      log.exception(e)
       self.Shutdown()
       raise
     except:
-      log.Err("Error while running bot!")
+      log.error("Error while running bot!")
       self.Shutdown()
       raise
 
@@ -57,16 +59,17 @@ class GuildBotManager:
       self.Run()
       self.loop.run_forever()
     except Exception as e:
-      log.Err("Error while running bot: {}".format(e))
+      log.error("Error while running bot: %s", e)
+      log.exception(e)
       raise
     except:
-      log.Err("Error while running bot!")
+      log.error("Error while running bot!")
       raise
     finally:
       self.Shutdown()
 
   def Shutdown(self):
-    log.Debug("Shutting down")
+    log.debug("Shutting down")
     try:
       for guild in discordBot.guilds:
         self.ShutdownGuild(guild)
@@ -76,10 +79,11 @@ class GuildBotManager:
       discordBot.clear()
       self.database.Close()
     except Exception as e:
-      log.Err("Error while closing Discord command Bot: {}".format(e))
+      log.error("Error while closing Discord command Bot: %s", e)
+      log.exception(e)
       raise
     except:
-      log.Err("Error while closing Discord command Bot!")
+      log.error("Error while closing Discord command Bot!")
       raise
 
   def ShutdownGuild(self, guild):
@@ -88,45 +92,48 @@ class GuildBotManager:
       if not shutdown:
         Error.Err("Failed to update {}'s status (shutdown)".format(guild.name))
     except Exception as e:
-      log.Err("Error while shutting down {}'s bot: {}".format(guild.name, e))
+      log.error("Error while shutting down %s's bot: %s", guild.name, e)
+      log.exception(e)
       traceback.print_exc()
     except:
-      log.Err("Error while shutting down {}'s bot!".format(guild.name))
+      log.error("Error while shutting down %s's bot!", guild.name)
 
   def WaitUntilReady(self):
-    log.Info("Waiting until ready")
+    log.info("Waiting until ready")
     self.loop.run_until_complete(discordBot.wait_until_ready())
-    log.Info("{} is ready".format(commands.Bot.__name__))
+    log.info("%s is ready", commands.Bot.__name__)
 
   def StartGuildBots(self):
     for guild in discordBot.guilds:
       guildBot = GuildBot(discordBot, guild, self.loop, self.database)
       self.guildBots[guild.id] = guildBot
-    log.Debug("Starting {} {}".format(len(discordBot.guilds), GuildBot.__name__))
+    log.debug("Starting %d %s", len(discordBot.guilds), GuildBot.__name__)
     tasks = []
     for guild in discordBot.guilds:
       tasks.append(self.guildBots[guild.id].Startup())
     self.loop.run_until_complete(asyncio.gather(*tasks))
-    log.Debug("{} {} running".format(len(self.guildBots), GuildBot.__name__))
+    log.debug("%d %s running", len(self.guildBots), GuildBot.__name__)
 
   def SetupGuildBots(self):
-    log.Debug("Setting up {} guilds".format(len(discordBot.guilds)))
+    log.debug("Setting up %d guilds", len(discordBot.guilds))
     tasks = []
     for guild in discordBot.guilds:
       tasks.append(self.guildBots[guild.id].Setup())
     self.loop.run_until_complete(asyncio.gather(*tasks))
-    log.Debug("{} guilds set up".format(len(self.guildBots)))
+    log.debug("%d guilds set up", len(self.guildBots))
 
   async def Command(self, ctx, cmd, *args):
-    log.Debug("Command: {} {}".format(cmd, " ".join(args)))
+    log.debug("Command: %s %s", cmd, " ".join(args))
     try:
       if ctx.guild.id not in self.guildBots:
-        Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(
+        Error.DErr(
+          ctx,
+          "`%s` has not been setup yet. This shouldn't be possible. Please contact the bot developer (%s)",
           ctx.guild.name,
-          "andrewf#6219"))
+          "andrewf#6219")
 
       guildBot = self.guildBots[ctx.guild.id]
-      await self.loop.create_task(guildBot.Command(ctx, cmd, *args))
+      await self.loop.create_task(guildBot.Command(Logging.LogExtra(ctx), cmd, *args))
     except NotkException as e:
       # This error will have already been logged
       return

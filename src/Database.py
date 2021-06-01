@@ -3,10 +3,10 @@ import mysql.connector
 
 # Local
 import Error
-import Logging as log
 # import TestExceptions as te
 
 from Config import cfg
+from Logging import logger as log
 
 class Database:
   def __init__(self, loop):
@@ -30,17 +30,17 @@ class Database:
     self.connection = None
 
   def Execute(self, sqlStatement, sqlParams=None):
-    # log.Debug("Executing SQL statement: {}".format(sqlStatement))
+    # log.debug("Executing SQL statement: %s", sqlStatement)
     sqlIter = self.cursor.execute(sqlStatement, sqlParams)
-    # log.Debug("Previous SQL statement returned {} rows".format(self.cursor.rowcount))
+    # log.debug("Previous SQL statement returned %d rows", self.cursor.rowcount)
     warnings = self.cursor.fetchwarnings()
     if bool(warnings):
-      log.Warn("SQL statement returned {} warnings: {}{}".format(
+      log.warning("SQL statement returned %d warnings: %s%s",
         len(warnings),
         sqlStatement,
-        "; params: {}".format(sqlParams) if bool(sqlParams) else ""))
+        "; params: {}".format(sqlParams) if bool(sqlParams) else "")
       for warning in warnings:
-        log.Warn("{}".format(warning))
+        log.warning("%s", warning)
     return sqlIter
 
   def Clear(self):
@@ -97,7 +97,7 @@ class Database:
       else:
         Error.Err("Unexpected SQL result while querying bot status")
     status = task()
-    log.Debug("Returning status for bot {}: {}".format(botID, status))
+    log.debug("Returning status for bot %s: %s", botID, status)
     return status
 
 

@@ -8,11 +8,11 @@ from inspect import currentframe, getframeinfo
 import discord
 
 # Local
-import Logging as log
 import TestUtil as tu
 
 from Config import cfg
 from Database import Database
+from Logging import logger as log
 from TestConfig import testCfg
 
 class TestClient:
@@ -25,15 +25,15 @@ class TestClient:
     self.database = Database(self.loop)
 
   def Run(self):
-    log.Info("Starting up")
+    log.info("Starting up")
     self.loop.create_task(self.client.start(cfg.cToken))
 
   def WaitUntilReady(self):
     self.loop.run_until_complete(self.client.wait_until_ready())
-    log.Info("Client is ready")
+    log.info("Client is ready")
 
   def Shutdown(self):
-    log.Debug("Shutting down")
+    log.debug("Shutting down")
     self.loop.run_until_complete(self.client.logout()) #close?
 
   def FetchStuff(self):
@@ -93,7 +93,7 @@ class TestClient:
       oldest_first=oldestFirst).flatten()
 
   def RemoveAllMembersFromRole(self, role, reason = None):
-    log.Debug("Removing all members from role: {}".format(role.name))
+    log.debug("Removing all members from role: %s", role.name)
     self.RemoveMembersFromRole(role, self.FetchMembers(role=role), reason=reason)
 
   def RemoveMembersFromRole(self, role, members, reason = None):
@@ -131,13 +131,13 @@ class TestClient:
         delKeys.append(key)
     tasks = []
     for key in delKeys:
-      log.Info("Deleting {} ({})".format(objects[key].name, key))
+      log.info("Deleting %s (%s)", objects[key].name, key)
       tasks.append(self.loop.create_task(objects[key].delete()))
       del objects[key]
     return tasks
 
   def ResetGuild(self):
-    log.Info("Resetting guild")
+    log.info("Resetting guild")
     # Do this instead of looping on DeleteChannel for efficiency
     self.FetchStuff()
     tasks = self.DeleteChannels(testCfg.cTestChannelNames + testCfg.cChannelNames) + self.DeleteRoles(testCfg.cRoleNames)
@@ -145,7 +145,7 @@ class TestClient:
     self.FetchStuff()
     if testCfg.cTestChannelName in self.channelsByName:
       self.testChannel = self.channelsByName[testCfg.cTestChannelName]
-    log.Info("Guild reset")
+    log.info("Guild reset")
     # TODO Delete all messages by the client.
 
   def Setup(self):
