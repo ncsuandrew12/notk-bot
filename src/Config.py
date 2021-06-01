@@ -66,9 +66,9 @@ class Config:
 
     self.cAmongUsJoinRequestMessageText = "{} {}".format(cCommandBase, self.cCommandJoin)
     self.cAmongUsLeaveRequestMessageText = "{} {}".format(cCommandBase, self.cCommandLeave)
-    self.cAmongUsSendGameNotificationText =\
-      "Type `{} {} <room-code>` in any public channel to send a new game notification.".format(\
-        cCommandBase,\
+    self.cAmongUsSendGameNotificationText = \
+      "Type `{} {} <room-code>` in any public channel to send a new game notification.".format(
+        cCommandBase,
         self.cCommandNewGame)
 
     with open(secretsFile) as file:

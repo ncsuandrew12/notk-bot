@@ -121,7 +121,7 @@ class GuildBotManager:
     log.Debug("Command: {} {}".format(cmd, " ".join(args)))
     try:
       if ctx.guild.id not in self.guildBots:
-        Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(\
+        Error.DErr(ctx, None, "`{}` has not been setup yet. This shouldn't be possible. Please contact the bot developer ({})".format(
           ctx.guild.name,
           "andrewf#6219"))
 
