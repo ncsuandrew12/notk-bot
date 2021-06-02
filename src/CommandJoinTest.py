@@ -1,13 +1,11 @@
 # Standard
-import asyncio
 import time
 from datetime import datetime
 
 # Local
-import GuildBotManager
 import TestUtil as tu
-from BotTesterInProcess import BotTesterInProcess
 from CommandTest import CommandTest
+from CommandTest import RoleRoll
 from Logging import logger as log
 from TestConfig import testCfg
 
@@ -15,40 +13,14 @@ class CommandJoinTest(CommandTest):
 
   def setUp(self):
     CommandTest.setUp(self)
-    self.bt.client.RemoveAllMembersFromRole(self.bt.guildBot.roleAmongUs)
 
   def tearDown(self):
-    self.bt.client.RemoveAllMembersFromRole(self.bt.guildBot.roleAmongUs)
     CommandTest.tearDown(self)
 
-  def TestAmongUsCommandJoinAllJoin(self, users):
-    self.TestAmongUsCommandJoin(users, users, users)
-
-  def TestAmongUsCommandJoin(
-    self,
-    users,
-    expectedUsersInRole,
-    expectedJoined):
+  def TestAmongUsCommandJoin(self, users, roleRoll, expectedJoined):
     preCommandTime = datetime.utcnow()
-    ctx = self.bt.guildBot.GetDiscordContextStub()
-    args = []
-    for user in users:
-      if user == "invalid":
-        # Member parameters must be tagged. Therefore, a simple name is invalid.
-        args.append(self.bt.guildBot.bot.user.name)
-      else:
-        args.append(user.mention)
-    self.bt.loop.run_until_complete(self.bt.loop.create_task(GuildBotManager.notkBot.Command(ctx, testCfg.cCommandJoin, *args)))
-    actualExpectedUsersInRole = []
-    for user in expectedUsersInRole:
-      actualExpectedUsersInRole.append(self.bt.loop.run_until_complete(self.bt.guildBot.guild.fetch_member(user.id)))
-    log.info("Testing that all expected role members were enrolled: %s: %s",
-      self.bt.guildBot.roleAmongUs.id,
-      actualExpectedUsersInRole)
-    for user in actualExpectedUsersInRole:
-      userRoles = tu.GetIDDict(user.roles)
-      log.info("Testing that %s is enrolled in %s:\n%s", user, self.bt.guildBot.roleAmongUs.id, userRoles)
-      self.assertTrue(self.bt.guildBot.roleAmongUs.id in userRoles)
+    self.RunAmongUsCommandJoin(users)
+    self.VerifyAmongUsRole(roleRoll)
     self.bt.client.FetchChannels()
     messagesMain2 = self.bt.client.FetchMessageHistoryAndFlatten(
       channel=self.bt.client.channelsByName[testCfg.cBotChannelName],
@@ -72,8 +44,11 @@ class CommandJoinTest(CommandTest):
       [],
       ["Hey `@{data.amongUsRoleName}` players! {data.user.mention} is now among the Among Us players!"])
 
+  def TestAmongUsCommandJoinAllJoin(self, users):
+    self.TestAmongUsCommandJoin(users, RoleRoll(users, []), users)
+
   def testAmongUsCommandJoinSelf(self):
-    self.TestAmongUsCommandJoin([], [self.bt.guildBot.bot.user], [self.bt.guildBot.bot.user])
+    self.TestAmongUsCommandJoin([], RoleRoll([self.bt.guildBot.bot.user], []), [self.bt.guildBot.bot.user])
 
   def testAmongUsCommandJoinSelfTagged(self):
     self.TestAmongUsCommandJoinAllJoin([self.bt.guildBot.bot.user])
@@ -85,31 +60,31 @@ class CommandJoinTest(CommandTest):
     self.TestAmongUsCommandJoinAllJoin([self.bt.guildBot.bot.user, self.bt.otherMember])
 
   def testAmongUsCommandJoinInvalid(self):
-    self.TestAmongUsCommandJoin(["invalid"], [], [])
+    self.TestAmongUsCommandJoin(["invalid"], RoleRoll([], []), [])
 
   def testAmongUsCommandJoinMixedValidity(self):
     self.TestAmongUsCommandJoin(
       [self.bt.guildBot.bot.user, "invalid", self.bt.otherMember],
-      [self.bt.guildBot.bot.user, self.bt.otherMember],
+      RoleRoll([self.bt.guildBot.bot.user, self.bt.otherMember], []),
       [self.bt.guildBot.bot.user, self.bt.otherMember])
 
   def testAmongUsCommandJoinSelfAndOtherAlreadyBoth(self):
     self.TestAmongUsCommandJoinAllJoin([self.bt.guildBot.bot.user, self.bt.otherMember])
     self.TestAmongUsCommandJoin(
       [self.bt.guildBot.bot.user, self.bt.otherMember],
-      [self.bt.guildBot.bot.user, self.bt.otherMember],
+      RoleRoll([self.bt.guildBot.bot.user, self.bt.otherMember], []),
       [])
 
   def testAmongUsCommandJoinSelfAndOtherMixedAlready(self):
     self.TestAmongUsCommandJoinAllJoin([self.bt.guildBot.bot.user])
     self.TestAmongUsCommandJoin(
       [self.bt.guildBot.bot.user, self.bt.otherMember],
-      [self.bt.guildBot.bot.user, self.bt.otherMember],
+      RoleRoll([self.bt.guildBot.bot.user, self.bt.otherMember], []),
       [self.bt.otherMember])
 
   def testAmongUsCommandJoinSelfAndOtherMixedValidity(self):
-    self.TestAmongUsCommandJoin([], [self.bt.guildBot.bot.user], [self.bt.guildBot.bot.user])
+    self.TestAmongUsCommandJoin([], RoleRoll([self.bt.guildBot.bot.user], []), [self.bt.guildBot.bot.user])
     self.TestAmongUsCommandJoin(
       [self.bt.guildBot.bot.user, "invalid", self.bt.otherMember],
-      [self.bt.guildBot.bot.user, self.bt.otherMember],
+      RoleRoll([self.bt.guildBot.bot.user, self.bt.otherMember], []),
       [self.bt.otherMember])

@@ -423,7 +423,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     missingMemberNames = []
     for member in members:
       if self.roleAmongUs in member.roles:
-        dlog.Info(logExtra, "Removing `@{}` from the `@{}` players", member.name, self.roleAmongUs.name)
+        dlog.Info(logExtra, "Removing `@%s` from the `@%s` players", member.name, self.roleAmongUs.name)
         await member.remove_roles(
           self.roleAmongUs,
           reason="{} requested for {} to no longer receive pings regarding Among Us games".format(
@@ -437,7 +437,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     if (len(missingMemberNames) > 0):
       dlog.Warn(
         logExtra,
-        "`@{}` isn't among the `@{}` players",
+        "`@%s` isn't among the `@%s` players",
         "`, `@".join(missingMemberNames),
         self.roleAmongUs.name)
 
@@ -446,7 +446,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     if not match:
       Error.ErrMinor(logExtra, "Bad room code `%s`. Must be six letters.", code)
     code = code.upper()
-    dlog.Info(logExtra, "Notifying `@{}` of Among Us game code `{}` in `#{}`", self.roleAmongUs.name, code, channel.name)
+    dlog.Info(logExtra, "Notifying `@%s` of Among Us game code `%s` in `#%s`", self.roleAmongUs.name, code, channel.name)
     await channel.send(
       content="Attention {}! New game code: `{}`. Type `{}` if you no longer want receive these notifications. {}".format(
         self.roleAmongUs.mention,
