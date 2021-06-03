@@ -176,7 +176,7 @@ You might also want to mute the <#{botChannelID}> channel, but it will give you 
           cmdJoin=testCfg.cCommandJoin,
           cmdLeave=testCfg.cCommandLeave,
           cmdNewGame=testCfg.cCommandNewGame,
-          amongUsCodesChannelID=dObjs.channelsByName[testCfg.cAmongUsChannelName].id,
+          amongUsCodesChannelID=dObjs.channelsByName[testCfg.cAmongUsCodesChannelName].id,
           amongUsRoleID=dObjs.rolesByName[testCfg.cAmongUsRoleName].id,
           logChannelID=dObjs.channelsByName[testCfg.cLogChannelName].id,
           botChannelID=dObjs.channelsByName[testCfg.cBotChannelName].id)
@@ -251,7 +251,7 @@ You might also want to mute the <#{botChannelID}> channel, but it will give you 
     actualExpectedMessages = []
     for msg in expectedMessages:
       actualExpectedMessages.append(msg.format(data=data))
-    self.VerifyExpectedMessages(data, actualMessages, expectedMessages)
+    self.VerifyExpectedMessages(data, actualMessages, actualExpectedMessages)
 
   def VerifyExpectedUserMessages(self, actualMessages, expectedUsers, expectedMessageFormatsAllUsers, expectedMessageFormatsPerUser):
     dataAllUsers = tu.Container()

@@ -20,6 +20,7 @@ class GuildBot:
     self.database = database
     self.guild = guild
     self.loop = loop
+    self.channelAmongUsCodes = None
     self.channelBot = None
     self.channelLog = None
     self.roleAmongUs = None
@@ -246,6 +247,41 @@ class GuildBot:
           roleMod.mention + ", " if roleMod else "",
           self.bot.user.mention,
           self.roleAmongUs.mention))
+
+    # TODO Delete after notk has been updated
+    if self.channelAmongUsCodes:
+      # TODO grant mods the ability to manage and send messages
+      overwrite = discord.PermissionOverwrite()
+      overwrite.view_channel=True
+      overwrite.manage_messages=True
+      await self.channelAmongUsCodes.set_permissions(self.guild.me, overwrite=overwrite)
+      overwrite = discord.PermissionOverwrite()
+      overwrite.view_channel=True
+      await self.channelAmongUsCodes.set_permissions(self.roleAmongUs, overwrite=overwrite)
+      overwrite = discord.PermissionOverwrite()
+      overwrite.view_channel=False
+      await self.channelAmongUsCodes.set_permissions(self.guild.default_role, overwrite=overwrite)
+
+    # Create Among Us codes channel
+    if not self.channelAmongUsCodes:
+      log.debug('Creating %s channel: `#%s`', self.bot.user.mention, cfg.cAmongUsCodesChannelName, extra=logExtra)
+      # TODO grant mods the ability to manage and send messages
+      overwrites = {
+        self.guild.default_role: discord.PermissionOverwrite(
+          view_channel=False),
+        self.roleAmongUs: discord.PermissionOverwrite(
+          view_channel=True),
+        self.guild.me: discord.PermissionOverwrite(
+          view_channel=True,
+          manage_messages=True)
+      }
+      self.channelAmongUsCodes = await self.guild.create_text_channel(
+        name=cfg.cAmongUsCodesChannelName,
+        overwrites=overwrites,
+        topic="Among Us Game Code Notifications",
+        reason="Need a place to put our Among Us game code notifications so as not to pollute actual chat channels.")
+      self.botChannels.append(self.channelAmongUsCodes)
+      dlog.Info(logExtra, 'Created %s channel: %s', self.bot.user.mention, self.channelAmongUsCodes.mention)
 
     releaseNotesLatestSection = ""
     if releaseNotes[cfg.cExternalChanges]:
