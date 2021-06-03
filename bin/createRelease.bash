@@ -129,10 +129,10 @@ if [ $dryRun -eq 0 ]; then
     echo "Copying release notes."
     cp RELEASE_NOTES releases/${tagLabel}/RELEASE_NOTES
 
-    echo "EXTERNAL CHANGES" > RELEASE_NOTES
-    echo "" >> RELEASE_NOTES
-    echo "INTERNAL CHANGES" >> RELEASE_NOTES
-    echo "" >> RELEASE_NOTES
+    # echo "EXTERNAL CHANGES" > RELEASE_NOTES
+    # echo "" >> RELEASE_NOTES
+    # echo "INTERNAL CHANGES" >> RELEASE_NOTES
+    # echo "" >> RELEASE_NOTES
 
     echo "Documenting version."
     echo ${tagLabel} > VERSION
