@@ -47,6 +47,11 @@ class CommandTest(BotInProcessTest):
     self.bt.loop.run_until_complete(self.bt.loop.create_task(
       GuildBotManager.notkBot.Command(self.bt.guildBot.GetDiscordContextStub(), testCfg.cCommandLeave, *args)))
 
+  def RunAmongUsCommandNewGame(self, gameCode):
+    args = [ gameCode ]
+    self.bt.loop.run_until_complete(self.bt.loop.create_task(
+      GuildBotManager.notkBot.Command(self.bt.guildBot.GetDiscordContextStub(), testCfg.cCommandNewGame, *args)))
+
   def PrepAmongUsCommandUserArgs(self, users):
     args = []
     for user in users:

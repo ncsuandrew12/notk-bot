@@ -128,6 +128,14 @@ class BotTester(ut.TestCase, metaclass=ABCMeta):
     self.StartupVerify()
     self.ShutdownBot()
 
+  def GetExpectedMessageData(self):
+    data = tu.Container()
+    data.amongUsRole = self.GetGuildBot().roleAmongUs
+    data.botUser = self.loop.run_until_complete(self.guild.fetch_member(self.user.id))
+    data.amongUsLeaveRequesMessageText = cfg.cAmongUsLeaveRequestMessageText
+    data.amongUsSendGameNotificationText = cfg.cAmongUsSendGameNotificationText
+    return data
+
   def VerifyClean(self):
     log.info("Verifying clean state")
     self.client.FetchChannels()
@@ -216,9 +224,34 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
       self.assertEqual(len(messages), expectedNewMessageCount)
       # TODO Fully verify the release notes message(s)
 
+  def VerifyExpectedMessages(self, data, actualMessages, expectedMessages):
+    foundMessages = []
+    for message in actualMessages:
+      found = False
+      msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
+      for expectedMessage in expectedMessages:
+        if (message.author.id == data.botUser.id) and (message.content == expectedMessage):
+          log.debug("Found matching message:%s", msgLogDescription)
+          found = True
+          foundMessages.append(message.content)
+      if not found:
+        log.debug("Ignoring non-matching message: %s", msgLogDescription)
+    for expectedMessage in expectedMessages:
+      self.assertTrue(expectedMessage in foundMessages)
+
+  def VerifyExpectedNewGameMessages(self, actualMessages, expectedMessages, gameCode):
+    data = self.GetExpectedMessageData()
+    data.user = data.botUser
+    data.gameCode = gameCode
+    log.info("Testing that expected messages were sent: expected=%s, actual=%s", expectedMessages, actualMessages)
+    actualExpectedMessages = []
+    for msg in expectedMessages:
+      actualExpectedMessages.append(msg.format(data=data))
+    self.VerifyExpectedMessages(data, actualMessages, expectedMessages)
+
   def VerifyExpectedUserMessages(self, actualMessages, expectedUsers, expectedMessageFormatsAllUsers, expectedMessageFormatsPerUser):
     dataAllUsers = tu.Container()
-    dataAllUsers.amongUsRoleName = testCfg.cAmongUsRoleName
+    dataAllUsers.amongUsRole = self.GetGuildBot().roleAmongUs
     dataAllUsers.guild = self.guild
     dataAllUsers.botUser = self.loop.run_until_complete(dataAllUsers.guild.fetch_member(self.user.id))
     mappedUsers = []
@@ -230,7 +263,7 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
       else:
         dataPerUser.user = self.loop.run_until_complete(dataAllUsers.guild.fetch_member(user.id))
       mappedUsers.append(dataPerUser.user)
-      dataPerUser.amongUsRoleName = dataAllUsers.amongUsRoleName
+      dataPerUser.amongUsRole = dataAllUsers.amongUsRole
       dataPerUser.botUser = dataAllUsers.botUser
       dataPerUser.guild = dataAllUsers.guild
       for msg in expectedMessageFormatsPerUser:
@@ -240,19 +273,7 @@ I recommend muting the <#{logChannelID}> channel; it is only for logging purpose
       expectedMessages.append(msg.format(data=dataAllUsers))
     log.info("Testing that expected messages were sent: expected=%s, actual=%s", expectedMessages, actualMessages)
     assert len(expectedMessages) == (len(expectedMessageFormatsAllUsers) + (len(expectedMessageFormatsPerUser) * len(expectedUsers)))
-    foundMessages = []
-    for message in actualMessages:
-      found = False
-      msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
-      for expectedMessage in expectedMessages:
-        if (message.author.id == dataAllUsers.botUser.id) and (message.content == expectedMessage):
-          log.debug("Found matching message:%s", msgLogDescription)
-          found = True
-          foundMessages.append(message.content)
-      if not found:
-        log.debug("Ignoring non-matching message: %s", msgLogDescription)
-    for expectedMessage in expectedMessages:
-      self.assertTrue(expectedMessage in foundMessages)
+    self.VerifyExpectedMessages(dataAllUsers, actualMessages, expectedMessages)
 
   def GetGuildBot(self):
     return GuildBotManager.notkBot.guildBots[self.guild.id]

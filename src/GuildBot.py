@@ -448,7 +448,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     code = code.upper()
     dlog.Info(logExtra, "Notifying `@%s` of Among Us game code `%s` in `#%s`", self.roleAmongUs.name, code, channel.name)
     await channel.send(
-      content="Attention {}! New game code: `{}`. Type `{}` if you no longer want receive these notifications. {}".format(
+      content="Attention {}! New game code: `{}`. Type `{}` if you no longer want to receive these notifications. {}".format(
         self.roleAmongUs.mention,
         code,
         cfg.cAmongUsLeaveRequestMessageText,

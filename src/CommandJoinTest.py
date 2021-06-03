@@ -22,27 +22,27 @@ class CommandJoinTest(CommandTest):
     self.RunAmongUsCommandJoin(users)
     self.VerifyAmongUsRole(roleRoll)
     self.bt.client.FetchChannels()
-    messagesMain2 = self.bt.client.FetchMessageHistoryAndFlatten(
+    allMessages = self.bt.client.FetchMessageHistoryAndFlatten(
       channel=self.bt.client.channelsByName[testCfg.cBotChannelName],
       limit=None,
       after=preCommandTime,
       oldestFirst=True)
-    log.debug("messagesMain2: %s", messagesMain2)
-    messagesMain = []
-    for message in messagesMain2:
+    log.debug("allMessages: %s", allMessages)
+    matchedMessages = []
+    for message in allMessages:
       msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
       if (message.author.id == self.bt.guildBot.bot.user.id) and (message.created_at >= preCommandTime):
         log.debug("Found matching message: %s", msgLogDescription)
-        messagesMain.append(message)
+        matchedMessages.append(message)
       else:
         log.debug("Ignoring non-matching message: %s", msgLogDescription)
-    log.debug("messagesMain: %s, expectedJoined: %s", messagesMain, expectedJoined)
-    self.assertEqual(len(messagesMain), len(expectedJoined))
+    log.debug("matchedMessages: %s, expectedJoined: %s", matchedMessages, expectedJoined)
+    self.assertEqual(len(matchedMessages), len(expectedJoined))
     self.bt.VerifyExpectedUserMessages(
-      messagesMain,
+      matchedMessages,
       expectedJoined,
       [],
-      ["Hey `@{data.amongUsRoleName}` players! {data.user.mention} is now among the Among Us players!"])
+      ["Hey `@{data.amongUsRole.name}` players! {data.user.mention} is now among the Among Us players!"])
 
   def TestAmongUsCommandJoinAllJoin(self, users):
     self.TestAmongUsCommandJoin(users, RoleRoll(users, []), users)

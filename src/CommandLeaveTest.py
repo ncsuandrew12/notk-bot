@@ -22,7 +22,6 @@ class CommandLeaveTest(CommandTest):
 
   def TestAmongUsCommandLeave(self, users, roleRoll, expectedLeft):
     preCommandTime = datetime.utcnow()
-    args = []
     self.RunAmongUsCommandLeave(users)
     # Make sure the users who left are included in the notEnrolled list.
     for user in expectedLeft:
@@ -30,24 +29,24 @@ class CommandLeaveTest(CommandTest):
         roleRoll.notEnrolled.append(user)
     self.VerifyAmongUsRole(roleRoll)
     self.bt.client.FetchChannels()
-    messagesMain2 = self.bt.client.FetchMessageHistoryAndFlatten(
+    allMessages = self.bt.client.FetchMessageHistoryAndFlatten(
       channel=self.bt.client.channelsByName[testCfg.cBotChannelName],
       limit=None,
       after=preCommandTime,
       oldestFirst=True)
-    log.debug("messagesMain2: %s", messagesMain2)
-    messagesMain = []
-    for message in messagesMain2:
+    log.debug("allMessages: %s", allMessages)
+    matchedMessages = []
+    for message in allMessages:
       msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
       if (message.author.id == self.bt.guildBot.bot.user.id) and (message.created_at >= preCommandTime):
         log.debug("Found matching message: %s", msgLogDescription)
-        messagesMain.append(message)
+        matchedMessages.append(message)
       else:
         log.debug("Ignoring non-matching message: %s", msgLogDescription)
-    log.debug("messagesMain: %s, expectedLeft: %s", messagesMain, expectedLeft)
-    self.assertEqual(len(messagesMain), len(expectedLeft))
+    log.debug("matchedMessages: %s, expectedLeft: %s", matchedMessages, expectedLeft)
+    self.assertEqual(len(matchedMessages), len(expectedLeft))
     self.bt.VerifyExpectedUserMessages(
-      messagesMain,
+      matchedMessages,
       expectedLeft,
       [],
       ["{data.user.mention} is now Among The Hidden."])
