@@ -29,6 +29,7 @@ class Config:
     with open(configFilename) as file:
       config = json.load(file)
 
+    dbNameSuffix = ""
     for cfgKey in config:
       if cfgKey == "universalSuffix":
         self.cUniversalSuffix = config[cfgKey]
