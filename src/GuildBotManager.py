@@ -122,18 +122,18 @@ class GuildBotManager:
     self.loop.run_until_complete(asyncio.gather(*tasks))
     log.debug("%d guilds set up", len(self.guildBots))
 
-  async def Command(self, ctx, cmd, *args):
+  async def Command(self, logExtra, cmd, *args):
     log.debug("Command: %s %s", cmd, " ".join(args))
     try:
-      if ctx.guild.id not in self.guildBots:
+      if logExtra.discordContext.guild.id not in self.guildBots:
         Error.DErr(
-          ctx,
+          logExtra.discordContext,
           "`%s` has not been setup yet. This shouldn't be possible. Please contact the bot developer (%s)",
-          ctx.guild.name,
+          logExtra.discordContext.guild.name,
           "andrewf#6219")
 
-      guildBot = self.guildBots[ctx.guild.id]
-      await self.loop.create_task(guildBot.Command(Logging.LogExtra(ctx), cmd, *args))
+      guildBot = self.guildBots[logExtra.discordContext.guild.id]
+      await self.loop.create_task(guildBot.Command(logExtra, cmd, *args))
     except NotkException as e:
       # This error will have already been logged
       return
@@ -144,4 +144,4 @@ notkBot = GuildBotManager(asyncio.get_event_loop(), cfg.cToken)
 
 @discordBot.command()
 async def au(ctx, cmd, *args):
-  await notkBot.Command(ctx, cmd, *args)
+  await notkBot.Command(Logging.LogExtra(ctx), cmd, *args)

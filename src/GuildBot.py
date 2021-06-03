@@ -350,6 +350,9 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     return self.database.ShutdownBot(self.guild.id)
 
   async def Command(self, logExtra, cmd, *args):
+    if bool(logExtra.discordContext.message):
+      await logExtra.discordContext.message.delete()
+
     log.debug("Processing command: `%s %s`", cmd, " ".join(args), extra=logExtra)
 
     # Parse the arguments as tagged members
