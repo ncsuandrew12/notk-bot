@@ -71,5 +71,8 @@ cp -vf ${ROOT_DIR}/src/*.py ${targetDir}/
 
 mkdir -p ${targetDir}/cfg/
 cp -rvf ${ROOT_DIR}/cfg/$target/* ${targetDir}/cfg/
+if [ $production -eq 1 ]; then
+    cp -vf ${ROOT_DIR}/cfg/$target/requirements.txt ${targetDir}/
+fi
 
 echo "Deployed to $target!"
