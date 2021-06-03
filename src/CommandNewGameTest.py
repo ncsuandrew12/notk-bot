@@ -48,6 +48,7 @@ class CommandNewGameTest(CommandTest):
     self.TestAmongUsCommandNewGame(True, "Pippin")
     
   def testAmongUsCommandNewGameInvalid(self):
+    self.TestAmongUsCommandNewGame(False, None)
     self.TestAmongUsCommandNewGame(False, "")
     self.TestAmongUsCommandNewGame(False, "Merry")
     self.TestAmongUsCommandNewGame(False, "Gandalf")

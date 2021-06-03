@@ -48,7 +48,9 @@ class CommandTest(BotInProcessTest):
       GuildBotManager.notkBot.Command(self.bt.guildBot.GetLogExtra(), testCfg.cCommandLeave, *args)))
 
   def RunAmongUsCommandNewGame(self, gameCode):
-    args = [ gameCode ]
+    args = []
+    if gameCode:
+      args.append(gameCode)
     self.bt.loop.run_until_complete(self.bt.loop.create_task(
       GuildBotManager.notkBot.Command(self.bt.guildBot.GetLogExtra(), testCfg.cCommandNewGame, *args)))
 

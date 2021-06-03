@@ -52,6 +52,8 @@ class GuildBot:
 
     log.debug("Starting %s (before channel located)", __name__, extra=logExtra)
 
+    self.botMember = await self.guild.fetch_member(self.bot.user.id)
+
     # TODO Instead of simply checking names, keep a persistent log of things created by the bot?
 
     # Check for existing channels
@@ -214,15 +216,17 @@ class GuildBot:
 
     # TODO delete this after notk is cleaned up.
     for channel in self.guild.channels:
-      for message in await channel.history(limit=None, oldest_first=True).flatten():
-        if (message.content.startswith(cfg.cCommandBase)):
-          await message.delete()
+      if isinstance(channel, discord.TextChannel) and channel.permissions_for(self.botMember).manage_messages:
+        for message in await channel.history(limit=None, oldest_first=True).flatten():
+          if (message.content.startswith(cfg.cCommandBase)):
+            await message.delete()
 
     # TODO delete this after notk is cleaned up
     for channel in self.botChannels:
-      for message in await channel.history(limit=None, oldest_first=True).flatten():
-        if (message.author.id != self.bot.user.id):
-          await message.delete()
+      if isinstance(channel, discord.TextChannel) and channel.permissions_for(self.botMember).manage_messages:
+        for message in await channel.history(limit=None, oldest_first=True).flatten():
+          if (message.author.id != self.bot.user.id):
+            await message.delete()
 
     # Create main bot channel
     if not self.channelBot:
@@ -406,7 +410,8 @@ You might also want to mute the {} channel, but it will give you helpful message
     if bool(logExtra.discordContext.message):
       await logExtra.discordContext.message.delete()
 
-    log.debug("Processing command: `%s %s`", cmd, " ".join(args), extra=logExtra)
+    fullCmd = "{} {}{}{}".format(cfg.cCommandBase, cmd, " " if len(args) > 0 else "", " ".join(args));
+    log.debug("Processing command: `%s`", fullCmd, extra=logExtra)
 
     # Parse the arguments as tagged members
     members = []
@@ -441,14 +446,20 @@ You might also want to mute the {} channel, but it will give you helpful message
       if (len(missing) > 0):
         dlog.Warn(logExtra, "Could not find members: `%s`!", "`, `".join(missing))
 
+    gameCode = ""
+    if cmd == cfg.cCommandNewGame:
+      if len(args) < 1:
+        Error.DErr(logExtra, "Missing game code parameter in command `%s`", fullCmd)
+      gameCode = args[0]
+
     if cmd == cfg.cCommandJoin:
       await self.AddAmongUsPlayer(logExtra, members)
     elif cmd == cfg.cCommandLeave:
       await self.RemoveAmongUsPlayer(logExtra, members)
     elif cmd == cfg.cCommandNewGame:
-      await self.NotifyAmongUsGame(logExtra, args[0])
+      await self.NotifyAmongUsGame(logExtra, gameCode)
     else:
-      Error.DErr(logExtra, "Invalid command `%s`.", cmd)
+      Error.DErr(logExtra, "Invalid command `%s`: `%s`.", cmd, fullCmd)
 
   async def AddAmongUsPlayer(self, logExtra, members):
     alreadyMemberNames = []
@@ -504,9 +515,10 @@ You might also want to mute the {} channel, but it will give you helpful message
     code = code.upper()
     dlog.Info(
       logExtra,
-      "Notifying `@%s` of Among Us game code `%s` in `#%s`",
+      "Notifying `@%s` of Among Us game code `%s` in %s",
       self.roleAmongUs.name,
-      code, self.channelAmongUsCodes.name)
+      code,
+      self.channelAmongUsCodes.mention)
     await self.channelAmongUsCodes.send(
       content="Attention {}! New game code: `{}`. Type `{}` if you no longer want to receive these notifications. {}".format(
         self.roleAmongUs.mention,
