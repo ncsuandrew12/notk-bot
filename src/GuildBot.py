@@ -28,7 +28,7 @@ class GuildBot:
   def GetBotChannels(self):
     channels = []
     for channel in self.guild.channels:
-      if channel.name in [ cfg.cBotChannelName, cfg.cLogChannelName ]:
+      if channel.name in [ cfg.cAmongUsCodesChannelName, cfg.cBotChannelName, cfg.cLogChannelName ]:
         channels.append(channel)
     return channels
 
@@ -56,7 +56,9 @@ class GuildBot:
     # Check for existing channels
     self.botChannels = self.GetBotChannels()
     for channel in self.botChannels:
-      if channel.name == cfg.cBotChannelName:
+      if channel.name == cfg.cAmongUsCodesChannelName:
+        self.channelAmongUsCodes = channel
+      elif channel.name == cfg.cBotChannelName:
         self.channelBot = channel
       elif channel.name == cfg.cLogChannelName:
         self.channelLog = channel
@@ -311,16 +313,19 @@ class GuildBot:
     """{}
 Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
 Type `{}` in any public channel if you no longer want to be notified.
-{}
+{} New game notifications appear in the {} channel.
 Tag the `{}` role to ping all Among Us players like so: {}
-I recommend muting the {} channel; it is only for logging purposes and will be very noisy.""".format(
+I recommend muting the {} channel; it is only for logging purposes and will be very noisy.
+You might also want to mute the {} channel, but it will give you helpful messages if you make mistakes using these commands.""".format(
       cfg.cInstructionalLine,
       cfg.cAmongUsJoinRequestMessageText,
       cfg.cAmongUsLeaveRequestMessageText,
       cfg.cAmongUsSendGameNotificationText,
+      self.channelAmongUsCodes.mention,
       cfg.cAmongUsRoleName,
       self.roleAmongUs.mention,
-      self.channelLog.mention)
+      self.channelLog.mention,
+      self.channelBot.mention)
     if not amongUsRoleMessage:
       dlog.Info(logExtra, 'Sending `@%s` instructional message', cfg.cAmongUsRoleName)
       amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
@@ -402,7 +407,7 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
     elif cmd == cfg.cCommandLeave:
       await self.RemoveAmongUsPlayer(logExtra, members)
     elif cmd == cfg.cCommandNewGame:
-      await self.NotifyAmongUsGame(logExtra, logExtra.discordContext.message.channel, args[0])
+      await self.NotifyAmongUsGame(logExtra, args[0])
     else:
       Error.DErr(logExtra, "Invalid command `%s`.", cmd)
 
@@ -453,13 +458,17 @@ I recommend muting the {} channel; it is only for logging purposes and will be v
         "`, `@".join(missingMemberNames),
         self.roleAmongUs.name)
 
-  async def NotifyAmongUsGame(self, logExtra, channel, code):
+  async def NotifyAmongUsGame(self, logExtra, code):
     match = re.compile(r'^([A-Za-z]{6})$').search(code)
     if not match:
       Error.ErrMinor(logExtra, "Bad room code `%s`. Must be six letters.", code)
     code = code.upper()
-    dlog.Info(logExtra, "Notifying `@%s` of Among Us game code `%s` in `#%s`", self.roleAmongUs.name, code, channel.name)
-    await channel.send(
+    dlog.Info(
+      logExtra,
+      "Notifying `@%s` of Among Us game code `%s` in `#%s`",
+      self.roleAmongUs.name,
+      code, self.channelAmongUsCodes.name)
+    await self.channelAmongUsCodes.send(
       content="Attention {}! New game code: `{}`. Type `{}` if you no longer want to receive these notifications. {}".format(
         self.roleAmongUs.mention,
         code,

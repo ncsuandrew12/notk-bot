@@ -37,7 +37,7 @@ class CommandLeaveTest(CommandTest):
         log.debug("Ignoring non-matching message: %s", msgLogDescription)
     expectedMessages = []
     if gameCodeValid:
-      expectedMessages.append("Attention {data.amongUsRole.mention}! New game code: `{data.gameCode}`. Type `{data.amongUsLeaveRequesMessageText}` if you no longer want to receive these notifications. {data.amongUsSendGameNotificationText}")
+      expectedMessages.append("Attention {data.amongUsRole.mention}! New game code: `{data.gameCode}`. Type `{data.amongUsLeaveRequestMessageText}` if you no longer want to receive these notifications. {data.amongUsSendGameNotificationText}")
     log.debug("matchedMessages: %s, expectedMessages: %s", matchedMessages, expectedMessages)
     self.assertEqual(len(matchedMessages), len(expectedMessages))
     self.bt.VerifyExpectedNewGameMessages(matchedMessages, expectedMessages, gameCode if gameCode == None else gameCode.upper())

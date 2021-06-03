@@ -59,6 +59,7 @@ class Config:
     cCommandRoot = "au" # Must match the @bot.commmand() function name
 
     self.cAmongUsRoleName = "among-us{}".format(self.cUniversalSuffix)
+    self.cAmongUsCodesChannelName = "among-us-codes"
     self.cBotChannelName = self.cBotName
     self.cCommandBase = "{}{}".format(self.cCommandPrefix, cCommandRoot)
     self.cLogChannelName = "{}-log".format(self.cBotChannelName)

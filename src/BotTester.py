@@ -133,7 +133,7 @@ class BotTester(ut.TestCase, metaclass=ABCMeta):
     data = tu.Container()
     data.amongUsRole = self.GetGuildBot().roleAmongUs
     data.botUser = self.loop.run_until_complete(self.guild.fetch_member(self.user.id))
-    data.amongUsLeaveRequesMessageText = cfg.cAmongUsLeaveRequestMessageText
+    data.amongUsLeaveRequestMessageText = cfg.cAmongUsLeaveRequestMessageText
     data.amongUsSendGameNotificationText = cfg.cAmongUsSendGameNotificationText
     return data
 
@@ -168,15 +168,18 @@ class BotTester(ut.TestCase, metaclass=ABCMeta):
         expectedInstructionMessageContent = """⚠ notk-bot-test Instructions ⚠
 Type `{cmdPrefix} {cmdJoin}` in any public channel to be notified about NOTK Among Us game sessions.
 Type `{cmdPrefix} {cmdLeave}` in any public channel if you no longer want to be notified.
-Type `{cmdPrefix} {cmdNewGame} <room-code>` in any public channel to send a new game notification.
+Type `{cmdPrefix} {cmdNewGame} <room-code>` in any public channel to send a new game notification. New game notifications appear in the <#{amongUsCodesChannelID}> channel.
 Tag the `among-us-test` role to ping all Among Us players like so: <@&{amongUsRoleID}>
-I recommend muting the <#{logChannelID}> channel; it is only for logging purposes and will be very noisy.""".format(
+I recommend muting the <#{logChannelID}> channel; it is only for logging purposes and will be very noisy.
+You might also want to mute the <#{botChannelID}> channel, but it will give you helpful messages if you make mistakes using these commands.""".format(
           cmdPrefix=cfg.cCommandBase,
           cmdJoin=testCfg.cCommandJoin,
           cmdLeave=testCfg.cCommandLeave,
           cmdNewGame=testCfg.cCommandNewGame,
+          amongUsCodesChannelID=dObjs.channelsByName[testCfg.cAmongUsChannelName].id,
           amongUsRoleID=dObjs.rolesByName[testCfg.cAmongUsRoleName].id,
-          logChannelID=dObjs.channelsByName[testCfg.cLogChannelName].id)
+          logChannelID=dObjs.channelsByName[testCfg.cLogChannelName].id,
+          botChannelID=dObjs.channelsByName[testCfg.cBotChannelName].id)
         if dObjs.instructionalMessage.content != expectedInstructionMessageContent:
           log.info(
             "Instructional message content mismatch:\n\"\"\"{}\"\"\"\n\"\"\"{}\"\"\"".format(

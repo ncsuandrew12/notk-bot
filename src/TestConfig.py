@@ -14,6 +14,7 @@ class TestConfig:
     # self.cRoleModSubstring = "moderator"
 
     self.cAmongUsRoleName = "among-us-test"
+    self.cAmongUsChannelName = "among-us-codes"
     self.cBotChannelName = "notk-bot-test"
     self.cLogChannelName = "notk-bot-test-log"
     self.cTestChannelName = "notk-bot-test-public"
