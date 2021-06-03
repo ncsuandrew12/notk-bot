@@ -11,7 +11,6 @@ from discord.ext import commands
 # Local
 import Error
 import Logging
-import Util
 from Config import cfg
 from Database import Database
 from Exceptions import MinorException

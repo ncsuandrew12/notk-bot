@@ -10,7 +10,6 @@ import Error
 import GuildBotManager
 import TestClient
 import TestUtil as tu
-import Util
 from Config import cfg
 from LoggingTest import logger as log
 from TestConfig import testCfg
