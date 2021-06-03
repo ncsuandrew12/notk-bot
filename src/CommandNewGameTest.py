@@ -21,6 +21,14 @@ class CommandNewGameTest(CommandTest):
     preCommandTime = datetime.utcnow()
     self.RunAmongUsCommandNewGame(gameCode)
     self.bt.client.FetchChannels()
+    last10Messages = self.bt.client.FetchMessageHistoryAndFlatten(
+      channel=self.bt.client.channelsByName[testCfg.cAmongUsCodesChannelName],
+      limit=10,
+      after=None,
+      oldestFirst=True)
+    log.debug("allMessages: %s", last10Messages)
+    for message in last10Messages:
+      log.debug("Logging message: %s `@%s` @%s: %s", message, message.author.name, message.created_at, message.content)
     allMessages = self.bt.client.FetchMessageHistoryAndFlatten(
       channel=self.bt.client.channelsByName[testCfg.cAmongUsCodesChannelName],
       limit=None,
