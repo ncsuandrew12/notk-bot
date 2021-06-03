@@ -73,11 +73,8 @@ class GuildBot:
         continue
       log.info('Found: `@%s`', role.name, extra=logExtra)
 
-  def GetDiscordContextStub(self):
-    return DiscordContextStub(self.guild, self.bot.user)
-
   def GetLogExtra(self):
-    return Logging.LogExtra(self.GetDiscordContextStub())
+    return Logging.LogExtra(DiscordContextStub(self.guild, self.bot.user))
 
   async def Setup(self):
     roleMod = None
@@ -211,6 +208,18 @@ class GuildBot:
               self.channelBot.mention,
               message.jump_url,
               extra=logExtra)
+
+    # TODO delete this after notk is cleaned up.
+    for channel in self.guild.channels:
+      for message in await channel.history(limit=None, oldest_first=True).flatten():
+        if (message.content.startswith(cfg.cCommandBase)):
+          await message.delete()
+
+    # TODO delete this after notk is cleaned up
+    for channel in self.botChannels:
+      for message in await channel.history(limit=None, oldest_first=True).flatten():
+        if (message.author.id != self.bot.user.id):
+          await message.delete()
 
     # Create main bot channel
     if not self.channelBot:

@@ -56,19 +56,19 @@ class Config:
 
     self.cBotName = "notk-bot{}".format(self.cUniversalSuffix)
 
+    cCommandRoot = "au" # Must match the @bot.commmand() function name
+
     self.cAmongUsRoleName = "among-us{}".format(self.cUniversalSuffix)
     self.cBotChannelName = self.cBotName
+    self.cCommandBase = "{}{}".format(self.cCommandPrefix, cCommandRoot)
     self.cLogChannelName = "{}-log".format(self.cBotChannelName)
     self.cInstructionalLine = "⚠ {} Instructions ⚠".format(self.cBotName)
 
-    cCommandRoot = "au" # Must match the @bot.commmand() function name
-    cCommandBase = "{}{}".format(self.cCommandPrefix, cCommandRoot)
-
-    self.cAmongUsJoinRequestMessageText = "{} {}".format(cCommandBase, self.cCommandJoin)
-    self.cAmongUsLeaveRequestMessageText = "{} {}".format(cCommandBase, self.cCommandLeave)
+    self.cAmongUsJoinRequestMessageText = "{} {}".format(self.cCommandBase, self.cCommandJoin)
+    self.cAmongUsLeaveRequestMessageText = "{} {}".format(self.cCommandBase, self.cCommandLeave)
     self.cAmongUsSendGameNotificationText = \
       "Type `{} {} <room-code>` in any public channel to send a new game notification.".format(
-        cCommandBase,
+        self.cCommandBase,
         self.cCommandNewGame)
 
     with open(secretsFile) as file:

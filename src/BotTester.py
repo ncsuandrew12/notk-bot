@@ -11,6 +11,7 @@ import GuildBotManager
 import TestClient
 import TestUtil as tu
 import Util
+from Config import cfg
 from LoggingTest import logger as log
 from TestConfig import testCfg
 
@@ -170,7 +171,7 @@ Type `{cmdPrefix} {cmdLeave}` in any public channel if you no longer want to be 
 Type `{cmdPrefix} {cmdNewGame} <room-code>` in any public channel to send a new game notification.
 Tag the `among-us-test` role to ping all Among Us players like so: <@&{amongUsRoleID}>
 I recommend muting the <#{logChannelID}> channel; it is only for logging purposes and will be very noisy.""".format(
-          cmdPrefix=testCfg.cCommandPrefix + testCfg.cCommandRoot,
+          cmdPrefix=cfg.cCommandBase,
           cmdJoin=testCfg.cCommandJoin,
           cmdLeave=testCfg.cCommandLeave,
           cmdNewGame=testCfg.cCommandNewGame,
