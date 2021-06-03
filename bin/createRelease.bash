@@ -115,7 +115,7 @@ echo
 doRelease=$(tr '[:upper:]' '[:lower:]' <<< $doRelease)
 if [[ ! $doRelease =~ ^[Yy]$ ]]; then
     >&2 echo "Release cancelled!"
-    exit ERR_RELEASE_CANCELLED
+    exit $ERR_RELEASE_CANCELLED
 fi
 if [ $dryRun -eq 0 ]; then
     echo "Creating release branch"
