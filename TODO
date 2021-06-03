@@ -1,47 +1,40 @@
 User-comprehensible TODOs:
--Update the status of the bot to show how many servers it is serving.
--Come up with a better name for the bot.
+-Add restart command, restricted to mods
 -Restrict joining/leaving other players to mods
 --Require a setup command before the bot becomes active? e.g. to specify which role is the "mod" role?
--Add restart command, restricted to mods
--When multiple users are added/removed in a single command, consolidate them into a single log/message to reduce notifications
--When multiple users add themselves within the same timespan (e.g. 5 minutes), send only a single message to reduce notifications
--If so configured, send all newgame notifications to dedicated channel (in our case, among-us-codes) regardless of where
- the command was typed
- -Restrict ability to send messages to said channel?
--Prompt new members to join the Among Us role.
--Request pizza from new members.
--(one-off) Send pizza to notk's #general
--Rename "among-us" role to "crewmates"?
--Mention channels in more of the log messages (instead of simply naming them)
--Point new users to the rules
+-Come up with a better name for the bot.
+-Add support for slash commands (blocked until discord.py or related library adds support)
+-Make among-us-voice-text only visible to the people in the voice chat.
+-Fix release notes messages
+-Include all past release notes in release notes message if the bot is starting on a new Discord
+-Update latest version message if release notes have changes
+-Add TODO list to a pinned bot channel message
+-Suggest new members join the Among Us role.
 -When a new game command is sent:
 --Mute all players in among us voice chat
 --Send the TTS message
 --Unmute any players that weren't already muted
--"Close" games and delete old newgame messages.
--Add description argument to newgame command
--Add TODO list to a pinned bot channel message
--Make among-us-voice-text only visible to the people in the voice chat.
--Update latest version message if release notes have changes
--Optionally sync a channel with a twitch chat
--Send a daily/weekly bible verse to a channel
 -Among Us integration?
--Steam integration
 -Twitch chat integration
--Include all past release notes in release notes message if the bot is starting on a new Discord
--Integrate into Discord / commands
--Automatically delete new game messages after some set amount of time (~12? hours)
+--Optionally sync a channel with a twitch chat
+-Steam integration
+-When multiple users are added/removed in a single command, consolidate them into a single log/message to reduce notifications
+-When multiple users add themselves within the same timespan (e.g. 5 minutes), send only a single message to reduce notifications
 -When the bot restarts, check the bot's nickname and update channel topics/descriptions accordingly.
--Fix release notes messages
+-Automatically delete new game messages after some set amount of time (~12? hours)?
+-Mention channels in more of the log messages (instead of simply naming them)
+-(one-off) Send pizza to notk's #general
+-Point new users to the rules
+-Request pizza from new members.
+-Update the Discord status of the bot to show how many servers it is serving.
+-Send a daily/weekly bible verse to a channel
 
 Technical/development TODOs:
--Move developer information to config file (andrewf#6219)
--Cache members. Alternatively, remove support for non-tagged members in join/leave commands
+-Modify production deployment script to deploy a specific release instead of the current directory.
+-Modularize GuildBot.Setup
 -Generalize RoleEnroller
 -Detect when an important role/channel has been deleted and handle robustly
+-Move developer information to config file (andrewf#6219)
 -During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values as a form of documentation.
 -Create wrapper around client/bot with additional utility/convenience functions
 -Solve never-retrieved task exceptions
--Modularize GuildBot.Setup
--Modify production deployment script to deploy a specific release instead of the current directory.
