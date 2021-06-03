@@ -338,13 +338,16 @@ You might also want to mute the {} channel, but it will give you helpful message
         amongUsRoleMessage.jump_url,
         extra=logExtra)
     else:
-      dlog.Info(
-        logExtra,
-        'Updating existing %s instructional message in %s: %s',
-        amongUsRoleMessage.author.mention,
-        self.channelBot.mention,
-        amongUsRoleMessage.jump_url)
-      await amongUsRoleMessage.edit(content=amongUsRoleMessageText)
+      await amongUsRoleMessage.delete()
+      dlog.Info(logExtra, 'Sending `@%s` instructional message', cfg.cAmongUsRoleName)
+      amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
+      # dlog.Info(
+      #   logExtra,
+      #   'Updating existing %s instructional message in %s: %s',
+      #   amongUsRoleMessage.author.mention,
+      #   self.channelBot.mention,
+      #   amongUsRoleMessage.jump_url)
+      # await amongUsRoleMessage.edit(content=amongUsRoleMessageText)
     if amongUsRoleMessage.pinned:
       log.info('`@%s` instructional message already pinned.', cfg.cAmongUsRoleName, extra=logExtra)
     else:
