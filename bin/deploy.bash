@@ -64,8 +64,8 @@ fi
 
 echo "Deploying to $target."
 
-cp -vf ${ROOT_DIR}/RELEASE_NOTES ${targetDir}/
-cp -vf ${ROOT_DIR}/VERSION ${targetDir}/
+cp -vf ${ROOT_DIR}/releases/${tag}/RELEASE_NOTES ${targetDir}/
+echo ${tag} > ${targetDir}/VERSION
 
 cp -vf ${ROOT_DIR}/src/*.py ${targetDir}/
 
