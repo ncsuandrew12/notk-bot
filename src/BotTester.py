@@ -11,7 +11,7 @@ import GuildBotManager
 import TestClient
 import TestUtil as tu
 import Util
-from Logging import logger as log
+from LoggingTest import logger as log
 from TestConfig import testCfg
 
 class BotTester(ut.TestCase, metaclass=ABCMeta):

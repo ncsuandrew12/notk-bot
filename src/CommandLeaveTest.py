@@ -6,7 +6,7 @@ from datetime import datetime
 import TestUtil as tu
 from CommandTest import CommandTest
 from CommandTest import RoleRoll
-from Logging import logger as log
+from LoggingTest import logger as log
 from TestConfig import testCfg
 
 class CommandLeaveTest(CommandTest):

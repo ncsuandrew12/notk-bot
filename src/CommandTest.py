@@ -5,7 +5,7 @@ import GuildBotManager
 import TestUtil as tu
 from BotInProcessTest import BotInProcessTest
 from BotInProcessTester import BotInProcessTester
-from Logging import logger as log
+from LoggingTest import logger as log
 from TestConfig import testCfg
 
 # TODO move

@@ -37,13 +37,11 @@ User-comprehensible TODOs:
 -Fix release notes messages
 
 Technical/development TODOs:
--Automated tests
 -Move developer information to config file (andrewf#6219)
 -Cache members. Alternatively, remove support for non-tagged members in join/leave commands
 -Generalize RoleEnroller
 -Detect when an important role/channel has been deleted and handle robustly
--During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values.
+-During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values as a form of documentation.
 -Create wrapper around client/bot with additional utility/convenience functions
--Split test logs out from production logs.
 -Solve never-retrieved task exceptions
 -Automatically reset RELEASE_NOTES as part of release process

@@ -101,12 +101,6 @@ class LogExtraIterator:
       return key
     raise StopIteration
 
-logDir = "./log"
-if not os.path.exists(logDir):
-  print("Making logDir: " + logDir)
-  os.makedirs(logDir)
-
-logger = logging.getLogger("notkbot")
 localFormatter = LocalFormatter(
   # %(processName)s
   fmt="%(asctime)s %(timeZone)s %(levelname)s%(levelnamePadding)s %(botName)s %(threadName)s %(callerFilename)s:%(callerFuncName)s(%(callerLineNum)d)%(discordMemberPrefix)s %(message)s",
@@ -115,36 +109,48 @@ discordLogChannelFormatter = DiscordLogChannelFormatter(
   fmt="`%(asctime)s %(timeZone)s %(levelnamePadding)s%(levelname)s` %(authorMention)s: %(message)s",
   datefmt=None)
 
-# Create log handlers
-stdoutHandler = logging.StreamHandler(stream=sys.stdout)
-stderrHandler = logging.StreamHandler(stream=sys.stderr)
-mainFileHandler = RotatingFileHandler(
-  filename="{}/log.log".format(logDir),
-  maxBytes=5 * 1024 * 1024, # 5MB
-  backupCount=9,
-  delay=True)
-errFileHandler = RotatingFileHandler(
-  filename="{}/err.log".format(logDir),
-  maxBytes=5 * 1024 * 1024, # 5MB
-  backupCount=1,
-  delay=True)
+def SetupLogger(title):
+  logDir = "./log/{}".format(title)
+  if not os.path.exists(logDir):
+    print("Making logDir: " + logDir)
+    os.makedirs(logDir)
 
-# Configure formatters
-stdoutHandler.setFormatter(localFormatter)
-stderrHandler.setFormatter(localFormatter)
-mainFileHandler.setFormatter(localFormatter)
-errFileHandler.setFormatter(localFormatter)
+  # Create log handlers
+  stdoutHandler = logging.StreamHandler(stream=sys.stdout)
+  stderrHandler = logging.StreamHandler(stream=sys.stderr)
+  mainFileHandler = RotatingFileHandler(
+    filename="{}/log.log".format(logDir),
+    maxBytes=5 * 1024 * 1024, # 5MB
+    backupCount=9,
+    delay=True)
+  errFileHandler = RotatingFileHandler(
+    filename="{}/err.log".format(logDir),
+    maxBytes=5 * 1024 * 1024, # 5MB
+    backupCount=1,
+    delay=True)
 
-# Configure log levels
-logging.getLogger().setLevel(logging.NOTSET) # Enable all logging levels in general
-stdoutHandler.setLevel(logging.NOTSET) # Set no minimum logging level for console output
-stdoutHandler.addFilter(MaxLogLevelFilter(logging.WARNING)) # Skip ERROR logs for standard console output
-stderrHandler.setLevel(logging.ERROR) # Skip non-ERROR logs for standard error output
-mainFileHandler.setLevel(logging.NOTSET) # Include all logs in main log file
-errFileHandler.setLevel(logging.WARNING) # Skip sub-WARNING logs for error log file
+  # Configure formatters
+  stdoutHandler.setFormatter(localFormatter)
+  stderrHandler.setFormatter(localFormatter)
+  mainFileHandler.setFormatter(localFormatter)
+  errFileHandler.setFormatter(localFormatter)
 
-# Add all handlers to logger
-logger.addHandler(stdoutHandler)
-logger.addHandler(stderrHandler)
-logger.addHandler(mainFileHandler)
-logger.addHandler(errFileHandler)
+  # Configure log levels
+  logging.getLogger().setLevel(logging.NOTSET) # Enable all logging levels in general
+  stdoutHandler.setLevel(logging.NOTSET) # Set no minimum logging level for console output
+  stdoutHandler.addFilter(MaxLogLevelFilter(logging.WARNING)) # Skip ERROR logs for standard console output
+  stderrHandler.setLevel(logging.ERROR) # Skip non-ERROR logs for standard error output
+  mainFileHandler.setLevel(logging.NOTSET) # Include all logs in main log file
+  errFileHandler.setLevel(logging.WARNING) # Skip sub-WARNING logs for error log file
+
+  logger = logging.getLogger(title)
+
+  # Add all handlers to logger
+  logger.addHandler(stdoutHandler)
+  logger.addHandler(stderrHandler)
+  logger.addHandler(mainFileHandler)
+  logger.addHandler(errFileHandler)
+
+  return logger
+
+logger = SetupLogger("notkbot")

@@ -12,7 +12,7 @@ import TestUtil as tu
 
 from Config import cfg
 from Database import Database
-from Logging import logger as log
+from LoggingTest import logger as log
 from TestConfig import testCfg
 
 class TestClient:
