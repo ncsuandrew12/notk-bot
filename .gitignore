@@ -3,6 +3,7 @@
 /.vscode
 /RELEASE_NOTES
 /VERSION
+/OAUTH2
 /diff.diff
 
 *.code-workspace
