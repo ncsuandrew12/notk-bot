@@ -34,6 +34,9 @@ case "$target" in
     production)
         production=1
         ;;
+    productionLocal)
+        production=1
+        ;;
     *)
         >&2 echo "ERROR: Invalid target: $target"
         exit $ERR_BAD_ARGUMENT
@@ -57,7 +60,7 @@ if [[ -e $targetDir ]]; then
     fi
 else
     mkdir -p $targetDir
-    if [ $production -eq 1 ]; then
+    if [ $(jq -r ".deployMethod" <<< $deploymentJson) -eq "sshfs" ]; then
         sshfs -p $(jq -r ".port" <<< $deploymentJson) `whoami`@$(jq -r ".host" <<< $deploymentJson) $targetDir
     fi
 fi

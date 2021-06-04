@@ -1,9 +1,8 @@
 {
-  "universalSuffix": "-test",
   "secretFile": "secrets.json",
+  "universalSuffix": "-test",
   "database": {
     "nameSuffix": "Test"
   },
-  "target": "test",
-  "test": true
+  "target": "productionLocal"
 }
