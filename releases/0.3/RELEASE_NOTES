@@ -1,0 +1,16 @@
+EXTERNAL CHANGES
+-Among Us game code notifications now go to #among-us-codes regardless of where the command is entered
+-#among-us-codes is now private. Only @among-us members can see it.
+-Users can no longer send messages in #among-us-codes. The new game command should be run from some other channel.
+ The announcement will be posted in #among-us-codes and the command's message will be instantly deleted.
+-Delete command messages after receiving them.
+-Fixed typo in new game messages.
+-Added timestamps to log channel messages along with other minor log channel message formatting changes.
+-Instructional message will not be updated. Instead, it will be deleted and re-sent.
+-Handle missing game code in new game command more gracefully.
+
+INTERNAL CHANGES
+-Removed extraneous trailing backslashes from source code.
+-Switched logging code to logging module.
+-Added unit tests for Leave command and New Game command.
+-Separated test and production logs.
