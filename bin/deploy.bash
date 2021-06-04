@@ -48,6 +48,11 @@ targetDir=/home/`whoami`/$(jq -r ".dir" <<< $deploymentJson)
 
 tag=`git tag --points-at HEAD`
 
+sshfsDeployment=0
+if [ $(jq -r ".deployMethod" <<< $deploymentJson) -eq "sshfs" ]; then
+    sshfsDeployment=1
+fi
+
 if [ $production -eq 1 ] && [[ `echo "$tag" | wc -w` -eq 0 ]]; then
     >&2 echo "ERROR: The current commit is not tagged."
     exit $ERR_NOT_READY
@@ -60,7 +65,7 @@ if [[ -e $targetDir ]]; then
     fi
 else
     mkdir -p $targetDir
-    if [ $(jq -r ".deployMethod" <<< $deploymentJson) -eq "sshfs" ]; then
+    if [ $sshfsDeployment -eq 1 ]; then
         sshfs -p $(jq -r ".port" <<< $deploymentJson) `whoami`@$(jq -r ".host" <<< $deploymentJson) $targetDir
     fi
 fi
@@ -74,7 +79,7 @@ cp -vf ${ROOT_DIR}/src/*.py ${targetDir}/
 
 mkdir -p ${targetDir}/cfg/
 cp -rvf ${ROOT_DIR}/cfg/$target/* ${targetDir}/cfg/
-if [ $production -eq 1 ]; then
+if [ $sshfsDeployment -eq 1 ]; then
     cp -vf ${ROOT_DIR}/cfg/$target/requirements.txt ${targetDir}/
 fi
 
