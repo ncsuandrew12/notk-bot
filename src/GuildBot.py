@@ -214,20 +214,6 @@ class GuildBot:
               message.jump_url,
               extra=logExtra)
 
-    # TODO delete this after notk is cleaned up.
-    for channel in self.guild.channels:
-      if isinstance(channel, discord.TextChannel) and channel.permissions_for(self.botMember).manage_messages:
-        for message in await channel.history(limit=None, oldest_first=True).flatten():
-          if (message.content.startswith(cfg.cCommandBase)):
-            await message.delete()
-
-    # TODO delete this after notk is cleaned up
-    for channel in self.botChannels:
-      if isinstance(channel, discord.TextChannel) and channel.permissions_for(self.botMember).manage_messages:
-        for message in await channel.history(limit=None, oldest_first=True).flatten():
-          if (message.author.id != self.bot.user.id):
-            await message.delete()
-
     # Create main bot channel
     if not self.channelBot:
       log.debug('Creating %s channel: `#%s`', self.bot.user.mention, cfg.cBotChannelName, extra=logExtra)
@@ -251,20 +237,6 @@ class GuildBot:
           roleMod.mention + ", " if roleMod else "",
           self.bot.user.mention,
           self.roleAmongUs.mention))
-
-    # TODO Delete after notk has been updated
-    if self.channelAmongUsCodes:
-      # TODO grant mods the ability to manage and send messages
-      overwrite = discord.PermissionOverwrite()
-      overwrite.view_channel=True
-      overwrite.manage_messages=True
-      await self.channelAmongUsCodes.set_permissions(self.guild.me, overwrite=overwrite)
-      overwrite = discord.PermissionOverwrite()
-      overwrite.view_channel=True
-      await self.channelAmongUsCodes.set_permissions(self.roleAmongUs, overwrite=overwrite)
-      overwrite = discord.PermissionOverwrite()
-      overwrite.view_channel=False
-      await self.channelAmongUsCodes.set_permissions(self.guild.default_role, overwrite=overwrite)
 
     # Create Among Us codes channel
     if not self.channelAmongUsCodes:
