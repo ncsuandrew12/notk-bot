@@ -121,7 +121,7 @@ class GuildBotManager:
     self.loop.run_until_complete(asyncio.gather(*tasks))
     log.debug("%d guilds set up", len(self.guildBots))
 
-  async def Command(self, logExtra, cmd, *args):
+  async def Command(self, cmd, logExtra=None, args=[]):
     log.debug("Command: %s %s", cmd, " ".join(args))
     try:
       if logExtra.discordContext.guild.id not in self.guildBots:
@@ -132,7 +132,7 @@ class GuildBotManager:
           "andrewf#6219")
 
       guildBot = self.guildBots[logExtra.discordContext.guild.id]
-      await self.loop.create_task(guildBot.Command(logExtra, cmd, *args))
+      await self.loop.create_task(guildBot.Command(cmd, logExtra, args))
     except NotkException as e:
       # This error will have already been logged
       return
@@ -143,4 +143,4 @@ notkBot = GuildBotManager(asyncio.get_event_loop(), cfg.cToken)
 
 @discordBot.command()
 async def au(ctx, cmd, *args):
-  await notkBot.Command(Logging.LogExtra(ctx), cmd, *args)
+  await notkBot.Command(cmd, Logging.LogExtra(ctx), args)

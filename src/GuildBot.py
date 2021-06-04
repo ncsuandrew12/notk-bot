@@ -17,18 +17,28 @@ from Logging import logger as log
 class GuildBot:
   def __init__(self, bot, guild, loop, database):
     self.bot = bot
+    self.botRoles = []
     self.database = database
     self.guild = guild
     self.loop = loop
     self.channelAmongUsCodes = None
     self.channelBot = None
     self.channelLog = None
+    self.logExtra = None
+    self.messageAmongUsRoleInstructions = None
+    self.messageReleaseNotes = None
+    self.releaseNotes = None
     self.roleAmongUs = None
+    self.roleMod = None
+    self.versionMajor = None
+    self.versionMinor = None
+    self.versionStr = None
 
   # TODO return map
   def GetBotChannels(self):
     channels = []
     for channel in self.guild.channels:
+      log.debug('Channel: `@%s`', channel.name, extra=self.logExtra)
       if channel.name in [ cfg.cAmongUsCodesChannelName, cfg.cBotChannelName, cfg.cLogChannelName ]:
         channels.append(channel)
     return channels
@@ -37,26 +47,24 @@ class GuildBot:
   def GetBotRoles(self):
     roles = []
     for role in self.guild.roles:
+      log.debug('Role: `@%s`', role.name, extra=self.logExtra)
       if role.name.lower() in [ cfg.cAmongUsRoleName.lower() ]:
         roles.append(role)
     return roles
 
   async def Startup(self):
     self.database.StartBot(self.guild.id)
-
-    logExtra = self.GetLogExtra()
-
+    self.logExtra = Logging.LogExtra(DiscordContextStub(self.guild, self.bot.user))
     self.logHandler = Logging.DiscordLogChannelHandler(self)
     self.logHandler.setFormatter(Logging.discordLogChannelFormatter)
     log.addHandler(self.logHandler)
-
-    log.debug("Starting %s (before channel located)", __name__, extra=logExtra)
-
+    log.debug("Starting %s (before channel located)", __name__, extra=self.logExtra)
     self.botMember = await self.guild.fetch_member(self.bot.user.id)
+    self.LoadChannels()
+    self.LoadRoles()
 
+  def LoadChannels(self):
     # TODO Instead of simply checking names, keep a persistent log of things created by the bot?
-
-    # Check for existing channels
     self.botChannels = self.GetBotChannels()
     for channel in self.botChannels:
       if channel.name == cfg.cAmongUsCodesChannelName:
@@ -67,49 +75,70 @@ class GuildBot:
         self.channelLog = channel
       else:
         continue
-      log.debug("Found: %s", channel.mention, extra=logExtra)
+      log.debug("Found: %s", channel.mention, extra=self.logExtra)
 
-    # Check for existing roles
+  def LoadRoles(self):
+    # TODO Instead of simply checking names, keep a persistent log of things created by the bot?
     self.botRoles = self.GetBotRoles()
-    for role in self.botRoles:
-      if role.name.lower() == cfg.cAmongUsRoleName.lower():
+    roleNames = []
+    for role in self.guild.roles:
+      roleNames.append(role.name)
+      if (role.name.lower() == cfg.cRoleModPrefix.lower()) | \
+         ((not self.roleMod) &
+          (role.name.lower().startswith(cfg.cRoleModPrefix.lower()) |
+           (cfg.cRoleModSubstring.lower() in role.name.lower()))):
+        self.roleMod = role
+      elif role.name.lower() == cfg.cAmongUsRoleName.lower():
         self.roleAmongUs = role
       else:
         continue
-      log.info('Found: `@%s`', role.name, extra=logExtra)
-
-  def GetLogExtra(self):
-    return Logging.LogExtra(DiscordContextStub(self.guild, self.bot.user))
+      log.info('Found: `@%s`', role.name, extra=self.logExtra)
+    log.info('Roles: `%s`', '`, `@'.join(roleNames), extra=self.logExtra)
+    if not self.roleMod:
+      log.warning("%s role not found.", cfg.cRoleModPrefix, extra=self.logExtra)
 
   async def Setup(self):
-    roleMod = None
+    log.info("Starting %s", __name__, extra=self.logExtra)
+    self.LoadVersion()
+    self.LoadReleaseNotes()
+    if not self.channelLog:
+      await self.CreateLogChannel()
+    if not self.roleAmongUs:
+      await self.CreateRole()
+    await self.LoadReleaseNotesMessage()
+    if not self.channelBot:
+      await self.CreateBotChannel()
+    if not self.channelAmongUsCodes:
+      await self.CreateAmongUsCodesChannel()
+    await self.UpdateOrSendReleaseNotesMessage()
+    await self.SendInstructionalMessageIfNeeded()
+    self.database.BotStarted(self.guild.id)
+    dlog.Info(self.logExtra, "%s started.", __name__)
 
-    logExtra = self.GetLogExtra()
-
-    log.info("Starting %s", __name__, extra=logExtra)
-
-    # Get version information from file
-    versionStr=""
+  # Version information will be constant across all GuildBots.
+  # TODO Move this to GuildBotManager
+  def LoadVersion(self):
+    self.versionStr=""
     versionPath = 'VERSION'
     versionFile = open(versionPath, 'r')
     try:
-      versionStr = versionFile.readline().strip()
-      if len(versionStr) < 3: # M.m
-        Error.DErr(logExtra, "Could not read version information from file: '{}' ({})".format(versionPath, versionStr))
+      self.versionStr = versionFile.readline().strip()
+      if len(self.versionStr) < 3: # M.m
+        Error.DErr(self.logExtra, "Could not read version information from file: '{}' ({})".format(versionPath, self.versionStr))
     except:
-      log.error("Could not read version information from file: '%s'", versionPath, extra=logExtra)
+      log.error("Could not read version information from file: '%s'", versionPath, extra=self.logExtra)
       raise
     finally:
       versionFile.close()
     if cfg.cTestMode:
-      versionMajor=int(re.sub(r"([0-9]+)\.[0-9]+", r"\1", versionStr))
-      versionMinor=int(re.sub(r"[0-9]+\.([0-9]+)", r"\1", versionStr))
-      versionMinor+=1
-      versionStr="{}.{}".format(versionMajor, versionMinor)
-    log.info("Version: %s", versionStr, extra=logExtra)
+      self.versionMajor=int(re.sub(r"([0-9]+)\.[0-9]+", r"\1", self.versionStr))
+      self.versionMinor=int(re.sub(r"[0-9]+\.([0-9]+)", r"\1", self.versionStr))
+      self.versionMinor+=1
+      self.versionStr="{}.{}".format(self.versionMajor, self.versionMinor)
+    log.info("Version: %s", self.versionStr, extra=self.logExtra)
 
-    # Get release notes information from file
-    releaseNotes = {}
+  def LoadReleaseNotes(self):
+    self.releaseNotes = {}
     releaseNotesPath = 'RELEASE_NOTES'
     releaseNotesFile = open(releaseNotesPath, 'r')
     try:
@@ -120,77 +149,52 @@ class GuildBot:
         match = re.search(r'^([A-Z ]+)$', line)
         if match:
           releaseNotesSection = match.group(1)
-          releaseNotes[releaseNotesSection] = ""
+          self.releaseNotes[releaseNotesSection] = ""
         elif rawLine:
-          releaseNotes[releaseNotesSection] += rawLine
+          self.releaseNotes[releaseNotesSection] += rawLine
     except Exception as e:
-      log.error("Could not read release notes from file: '%s'", releaseNotesPath, extra=logExtra)
+      log.error("Could not read release notes from file: '%s'", releaseNotesPath, extra=self.logExtra)
       raise
     finally:
       releaseNotesFile.close()
-    for key in releaseNotes:
-      releaseNotes[releaseNotesSection].strip()
-    log.info("Release Notes: %s", releaseNotes, extra=logExtra)
+    for key in self.releaseNotes:
+      self.releaseNotes[releaseNotesSection].strip()
+    log.info("Release Notes: %s", self.releaseNotes, extra=self.logExtra)
+    self.releaseNotesLatestSection = ""
+    if self.releaseNotes[cfg.cExternalChanges]:
+      self.releaseNotesLatestSection = "Version {}:\n{}".format(
+        self.versionStr,
+        self.releaseNotes[cfg.cExternalChanges])
 
-    # TODO delete
-    # if bool(self.channelBot):
-    #   await self.channelBot.delete(reason="pre-setup")
-    #   guildBot.channelBot = None
+  async def CreateLogChannel(self):
+    log.debug('Creating %s log channel: `#%s`', self.bot.user.mention, cfg.cLogChannelName, extra=self.logExtra)
+    overwrites = {
+      self.guild.default_role: discord.PermissionOverwrite(send_messages=False),
+      self.guild.me: discord.PermissionOverwrite(
+        manage_messages=True,
+        read_messages=True,
+        send_messages=True)
+    }
+    self.channelLog = await self.guild.create_text_channel(
+      name=cfg.cLogChannelName,
+      overwrites=overwrites,
+      topic="NOTK Bot Log",
+      reason="Need a place to put logs")
+    self.botChannels.append(self.channelLog)
+    dlog.Info(self.logExtra, 'Created %s log channel: `#%s`', self.bot.user.mention, self.channelLog.mention)
 
-    # Create the bot log channel if necessary
-    if not self.channelLog:
-      log.debug('Creating %s log channel: `#%s`', self.bot.user.mention, cfg.cLogChannelName, extra=logExtra)
-      overwrites = {
-        self.guild.default_role: discord.PermissionOverwrite(send_messages=False),
-        self.guild.me: discord.PermissionOverwrite(
-          manage_messages=True,
-          read_messages=True,
-          send_messages=True)
-      }
-      self.channelLog = await self.guild.create_text_channel(
-        name=cfg.cLogChannelName,
-        overwrites=overwrites,
-        topic="NOTK Bot Log",
-        reason="Need a place to put logs")
-      self.botChannels.append(self.channelLog)
-      dlog.Info(logExtra, 'Created %s log channel: `#%s`', self.bot.user.mention, self.channelLog.mention)
+  async def CreateRole(self):
+    dlog.Info(self.logExtra, 'Creating `@%s`', cfg.cAmongUsRoleName)
+    self.roleAmongUs = await self.guild.create_role(
+      name=cfg.cAmongUsRoleName,
+      mentionable=True,
+      hoist=False,
+      reason="Allow users to easily ping everyone interested in playing Among Us.")
+      #colour=Colour.gold,
+    self.botRoles.append(self.roleAmongUs)
 
-    # TODO delete
-    # for role in logExtra.discordContext.guild.roles:
-    #   if role.name == cfg.cAmongUsRoleName:
-    #     await role.delete(reason="cleanup")
-
-    # Check for existing roles
-    roleNames = []
-    for role in self.guild.roles:
-      roleNames.append(role.name)
-      if (role.name.lower() == cfg.cRoleModPrefix.lower()) | \
-         ((not roleMod) &
-          (role.name.lower().startswith(cfg.cRoleModPrefix.lower()) |
-           (cfg.cRoleModSubstring.lower() in role.name.lower()))):
-        roleMod = role
-      else:
-        continue
-      log.info('Found: `@%s`', role.name, extra=logExtra)
-    log.info('Roles: `%s`', '`, `@'.join(roleNames), extra=logExtra)
-
-    if not roleMod:
-      log.warning("%s role not found.", cfg.cRoleModPrefix, extra=logExtra)
-
-    # Create the role
-    if not self.roleAmongUs:
-      dlog.Info(logExtra, 'Creating `@%s`', cfg.cAmongUsRoleName)
-      self.roleAmongUs = await self.guild.create_role(
-        name=cfg.cAmongUsRoleName,
-        mentionable=True,
-        hoist=False,
-        reason="Allow users to easily ping everyone interested in playing Among Us.")
-        #colour=Colour.gold,
-      self.botRoles.append(self.roleAmongUs)
-
-    # Check the existing pinned messages and parse data from them
-    amongUsRoleMessage = None
-    releaseNotesMessage = None
+  async def LoadReleaseNotesMessage(self):
+    # Check the existing release notes messages and parse data from them
     if self.channelBot:
       # FIXME Parse all history until we find the instructional message
       for message in await self.channelBot.history(limit=None, oldest_first=True).flatten():
@@ -198,79 +202,71 @@ class GuildBot:
           # log.info('Found message in %s: [%s]',
           #   self.channelBot.mention,
           #   message.content,
-          #   extra=logExtra)
+          #   extra=self.logExtra)
           if cfg.cInstructionalLine in message.content.partition('\n')[0]:
-            amongUsRoleMessage = message
+            self.messageAmongUsRoleInstructions = message
             log.info('Found %s instructional message in %s: %s',
               message.author.mention,
               self.channelBot.mention,
               message.jump_url,
-              extra=logExtra)
+              extra=self.logExtra)
           elif message.content.startswith(cfg.cReleaseNotesHeader):
-            releaseNotesMessage = message
+            self.messageReleaseNotes = message
             log.info('Found %s release notes message in %s: %s',
               message.author.mention,
               self.channelBot.mention,
               message.jump_url,
-              extra=logExtra)
+              extra=self.logExtra)
 
-    # Create main bot channel
-    if not self.channelBot:
-      log.debug('Creating %s channel: `#%s`', self.bot.user.mention, cfg.cBotChannelName, extra=logExtra)
-      overwrites = {
-        self.guild.default_role: discord.PermissionOverwrite(send_messages=False),
-        self.guild.me: discord.PermissionOverwrite(
-          manage_messages=True,
-          read_messages=True,
-          send_messages=True)
-      }
-      self.channelBot = await self.guild.create_text_channel(
-        name=cfg.cBotChannelName,
-        overwrites=overwrites,
-        topic="NOTK Bot",
-        reason="Need a place to put our instructional message and send join/leave notifications")
-      self.botChannels.append(self.channelBot)
-      dlog.Info(logExtra, 'Created %s channel: %s', self.bot.user.mention, self.channelBot.mention)
+  async def CreateBotChannel(self):
+    log.debug('Creating %s channel: `#%s`', self.bot.user.mention, cfg.cBotChannelName, extra=self.logExtra)
+    overwrites = {
+      self.guild.default_role: discord.PermissionOverwrite(send_messages=False),
+      self.guild.me: discord.PermissionOverwrite(
+        manage_messages=True,
+        read_messages=True,
+        send_messages=True)
+    }
+    self.channelBot = await self.guild.create_text_channel(
+      name=cfg.cBotChannelName,
+      overwrites=overwrites,
+      topic="NOTK Bot",
+      reason="Need a place to put our instructional message and send join/leave notifications")
+    self.botChannels.append(self.channelBot)
+    dlog.Info(self.logExtra, 'Created %s channel: %s', self.bot.user.mention, self.channelBot.mention)
+    await self.channelBot.send(
+      content="{}{} has added support for the Among Us player group via the {} role.".format(
+        self.roleMod.mention + ", " if self.roleMod else "",
+        self.bot.user.mention,
+        self.roleAmongUs.mention))
 
-      await self.channelBot.send(
-        content="{}{} has added support for the Among Us player group via the {} role.".format(
-          roleMod.mention + ", " if roleMod else "",
-          self.bot.user.mention,
-          self.roleAmongUs.mention))
+  async def CreateAmongUsCodesChannel(self):
+    log.debug('Creating %s channel: `#%s`', self.bot.user.mention, cfg.cAmongUsCodesChannelName, extra=self.logExtra)
+    # TODO grant mods the ability to manage and send messages
+    overwrites = {
+      self.guild.default_role: discord.PermissionOverwrite(
+        view_channel=False),
+      self.roleAmongUs: discord.PermissionOverwrite(
+        view_channel=True),
+      self.guild.me: discord.PermissionOverwrite(
+        view_channel=True,
+        manage_messages=True)
+    }
+    self.channelAmongUsCodes = await self.guild.create_text_channel(
+      name=cfg.cAmongUsCodesChannelName,
+      overwrites=overwrites,
+      topic="Among Us Game Code Notifications",
+      reason="Need a place to put our Among Us game code notifications so as not to pollute actual chat channels.")
+    self.botChannels.append(self.channelAmongUsCodes)
+    dlog.Info(self.logExtra, 'Created %s channel: %s', self.bot.user.mention, self.channelAmongUsCodes.mention)
 
-    # Create Among Us codes channel
-    if not self.channelAmongUsCodes:
-      log.debug('Creating %s channel: `#%s`', self.bot.user.mention, cfg.cAmongUsCodesChannelName, extra=logExtra)
-      # TODO grant mods the ability to manage and send messages
-      overwrites = {
-        self.guild.default_role: discord.PermissionOverwrite(
-          view_channel=False),
-        self.roleAmongUs: discord.PermissionOverwrite(
-          view_channel=True),
-        self.guild.me: discord.PermissionOverwrite(
-          view_channel=True,
-          manage_messages=True)
-      }
-      self.channelAmongUsCodes = await self.guild.create_text_channel(
-        name=cfg.cAmongUsCodesChannelName,
-        overwrites=overwrites,
-        topic="Among Us Game Code Notifications",
-        reason="Need a place to put our Among Us game code notifications so as not to pollute actual chat channels.")
-      self.botChannels.append(self.channelAmongUsCodes)
-      dlog.Info(logExtra, 'Created %s channel: %s', self.bot.user.mention, self.channelAmongUsCodes.mention)
-
-    releaseNotesLatestSection = ""
-    if releaseNotes[cfg.cExternalChanges]:
-      releaseNotesLatestSection = "Version {}:\n{}".format(
-        versionStr,
-        releaseNotes[cfg.cExternalChanges])
-
-    # Handle release notes pinned message
+  async def UpdateOrSendReleaseNotesMessage(self):
     oldVersionStr = None
     releaseNotesSections = []
     index = -1
-    if releaseNotesMessage:
-      for line in releaseNotesMessage.content.splitlines():
+    # Get existing message information
+    if self.messageReleaseNotes:
+      for line in self.messageReleaseNotes.content.splitlines():
         match = re.search(r'^Version ([0-9]+\.[0-9]+):$', line)
         if match:
           if not oldVersionStr:
@@ -281,46 +277,50 @@ class GuildBot:
           releaseNotesSections[index] += line + "\n"
     if not oldVersionStr:
       oldVersionStr = "0.0"
-
+    # Add latest release information
     if len(releaseNotesSections):
-      if versionStr == oldVersionStr:
-        releaseNotesSections[0] = releaseNotesLatestSection
+      if self.versionStr == oldVersionStr:
+        releaseNotesSections[0] = self.releaseNotesLatestSection
       else:
-        releaseNotesSections.insert(0, releaseNotesLatestSection)
+        releaseNotesSections.insert(0, self.releaseNotesLatestSection)
     else:
-      releaseNotesSections = [ releaseNotesLatestSection ]
+      releaseNotesSections = [ self.releaseNotesLatestSection ]
     releaseNotesMessageText = "{}\n\n{}".format(cfg.cReleaseNotesHeader, "".join(releaseNotesSections))
-
-    if not releaseNotesMessage:
-      dlog.Info(logExtra, 'Sending `@%s` release notes message', cfg.cAmongUsRoleName)
-      releaseNotesMessage = await self.channelBot.send(content=releaseNotesMessageText)
-    elif releaseNotesMessage.content == releaseNotesMessageText:
-      # This should indicate that this is a simple restart.
+    # Updated/send the release notes message
+    if not self.messageReleaseNotes:
+      # Fresh install (or bot channel was re-created)
+      dlog.Info(self.logExtra, 'Sending `@%s` release notes message', cfg.cAmongUsRoleName)
+      self.messageReleaseNotes = await self.channelBot.send(content=releaseNotesMessageText)
+    elif self.messageReleaseNotes.content == releaseNotesMessageText:
+      # Non-upgrade restart.
       log.info('Found up-to-date %s release notes message in %s: %s',
-        releaseNotesMessage.author.mention,
+        self.messageReleaseNotes.author.mention,
         self.channelBot.mention,
-        releaseNotesMessage.jump_url,
-        extra=logExtra)
+        self.messageReleaseNotes.jump_url,
+        extra=self.logExtra)
     else:
-      if (versionStr != oldVersionStr):
-        dlog.Info(logExtra, 'Updating existing %s release notes message in %s: %s',
-          releaseNotesMessage.author.mention,
+      # Release notes need updating
+      if (self.versionStr != oldVersionStr):
+        dlog.Info(self.logExtra, 'Updating existing %s release notes message in %s: %s',
+          self.messageReleaseNotes.author.mention,
           self.channelBot.mention,
-          releaseNotesMessage.jump_url)
-      await releaseNotesMessage.edit(content=releaseNotesMessageText)
-      if (versionStr != oldVersionStr):
+          self.messageReleaseNotes.jump_url)
+      await self.messageReleaseNotes.edit(content=releaseNotesMessageText)
+      # Send a new message just for the latest release info
+      if (self.versionStr != oldVersionStr):
         await self.channelBot.send(content="{}{} has been updated!\n{}".format(
-          roleMod.mention + ", " if roleMod else "",
+          self.roleMod.mention + ", " if self.roleMod else "",
           self.bot.user.mention,
           releaseNotesSections[0]))
-    if releaseNotesMessage.pinned:
-      log.info('`@%s` release notes message already pinned.', cfg.cAmongUsRoleName, extra=logExtra)
+    # Ensure that the main release notes message is pinned.
+    if self.messageReleaseNotes.pinned:
+      log.info('`@%s` release notes message already pinned.', cfg.cAmongUsRoleName, extra=self.logExtra)
     else:
-      dlog.Info(logExtra, 'Pinning `@%s` release notes message', cfg.cAmongUsRoleName)
-      await releaseNotesMessage.pin(
+      dlog.Info(self.logExtra, 'Pinning `@%s` release notes message', cfg.cAmongUsRoleName)
+      await self.messageReleaseNotes.pin(
         reason="The `@{}` release notes message will get buried if it isn't pinned".format(cfg.cBotName))
 
-    # Handle instructional pinned message
+  async def SendInstructionalMessageIfNeeded(self):
     amongUsRoleMessageText = \
     """{}
 Type `{}` in any public channel to be notified about NOTK Among Us game sessions.
@@ -338,47 +338,45 @@ You might also want to mute the {} channel, but it will give you helpful message
       self.roleAmongUs.mention,
       self.channelLog.mention,
       self.channelBot.mention)
-    if not amongUsRoleMessage:
-      dlog.Info(logExtra, 'Sending `@%s` instructional message', cfg.cAmongUsRoleName)
-      amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
-    elif amongUsRoleMessage.content == amongUsRoleMessageText:
-      # This should indicate that this is a simple restart.
+    if not self.messageAmongUsRoleInstructions:
+      dlog.Info(self.logExtra, 'Sending `@%s` instructional message', cfg.cAmongUsRoleName)
+      self.messageAmongUsRoleInstructions = await self.channelBot.send(content=amongUsRoleMessageText)
+    elif self.messageAmongUsRoleInstructions.content == amongUsRoleMessageText:
+      # Non-upgrade restart
       log.info(
         'Found up-to-date %s instructional message in %s: %s',
-        amongUsRoleMessage.author.mention,
+        self.messageAmongUsRoleInstructions.author.mention,
         self.channelBot.mention,
-        amongUsRoleMessage.jump_url,
-        extra=logExtra)
+        self.messageAmongUsRoleInstructions.jump_url,
+        extra=self.logExtra)
     else:
-      await amongUsRoleMessage.delete()
-      dlog.Info(logExtra, 'Sending `@%s` instructional message', cfg.cAmongUsRoleName)
-      amongUsRoleMessage = await self.channelBot.send(content=amongUsRoleMessageText)
-      # dlog.Info(
-      #   logExtra,
-      #   'Updating existing %s instructional message in %s: %s',
-      #   amongUsRoleMessage.author.mention,
-      #   self.channelBot.mention,
-      #   amongUsRoleMessage.jump_url)
-      # await amongUsRoleMessage.edit(content=amongUsRoleMessageText)
-    if amongUsRoleMessage.pinned:
-      log.info('`@%s` instructional message already pinned.', cfg.cAmongUsRoleName, extra=logExtra)
+      dlog.Info(
+        self.logExtra,
+        'Out-of-date instructional message found.\nOld: %s\nNew: %s',
+        amongUsRoleMessageText,
+        self.messageAmongUsRoleInstructions.content)
+      # Old instructions may be incorrect or misleading. Delete and re-send with the up-to-date instructions.
+      await self.messageAmongUsRoleInstructions.delete()
+      dlog.Info(self.logExtra, 'Sending `@%s` instructional message', cfg.cAmongUsRoleName)
+      self.messageAmongUsRoleInstructions = await self.channelBot.send(content=amongUsRoleMessageText)
+    # Ensure that the instructional message is pinned
+    if self.messageAmongUsRoleInstructions.pinned:
+      log.info('`@%s` instructional message already pinned.', cfg.cAmongUsRoleName, extra=self.logExtra)
     else:
-      dlog.Info(logExtra, 'Pinning `@%s` instructional message', cfg.cAmongUsRoleName)
-      await amongUsRoleMessage.pin(
+      dlog.Info(self.logExtra, 'Pinning `@%s` instructional message', cfg.cAmongUsRoleName)
+      await self.messageAmongUsRoleInstructions.pin(
         reason="The `@{}` instructional message needs to be very visible to be useful".format(cfg.cBotName))
 
-    self.database.BotStarted(self.guild.id)
-
-    dlog.Info(logExtra, "%s started.", __name__)
-
   def Shutdown(self):
-    log.info("Shutting down.", extra=self.GetLogExtra())
+    log.info("Shutting down.", extra=self.logExtra)
     log.removeHandler(self.logHandler)
     self.logHandler.flush()
     self.logHandler.close()
     return self.database.ShutdownBot(self.guild.id)
 
-  async def Command(self, logExtra, cmd, *args):
+  async def Command(self, cmd, logExtra=None, args=[]):
+    if not logExtra:
+      logExtra = self.logExtra
     if bool(logExtra.discordContext.message):
       await logExtra.discordContext.message.delete()
 

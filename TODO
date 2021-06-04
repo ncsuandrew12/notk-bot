@@ -31,7 +31,6 @@ User-comprehensible TODOs:
 
 Technical/development TODOs:
 -Modify production deployment script to deploy a specific release instead of the current directory.
--Modularize GuildBot.Setup
 -Generalize RoleEnroller
 -Detect when an important role/channel has been deleted and handle robustly
 -Move developer information to config file (andrewf#6219)

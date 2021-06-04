@@ -45,7 +45,7 @@ class BotTester(ut.TestCase, metaclass=ABCMeta):
       # TODO Log a warning if-and-only-if the bot wasn't already killed by the test
       pass
     self.client.database.Clear()
-    self.client.ResetGuild()
+    # self.client.ResetGuild()
     self.client.Shutdown()
 
   @abstractmethod
