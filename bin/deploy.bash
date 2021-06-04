@@ -53,9 +53,13 @@ if [ $(jq -r ".deployMethod" <<< $deploymentJson) -eq "sshfs" ]; then
     sshfsDeployment=1
 fi
 
-if [ $production -eq 1 ] && [[ `echo "$tag" | wc -w` -eq 0 ]]; then
-    >&2 echo "ERROR: The current commit is not tagged."
-    exit $ERR_NOT_READY
+if [[ `echo "$tag" | wc -w` -eq 0 ]]; then
+    if [ $production -eq 1 ]; then
+        >&2 echo "ERROR: The current commit is not tagged."
+        exit $ERR_NOT_READY
+    else
+        tag=`head -1 ${ROOT_DIR}/VERSION`
+    fi
 fi
 
 if [[ -e $targetDir ]]; then

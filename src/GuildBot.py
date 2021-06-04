@@ -95,7 +95,7 @@ class GuildBot:
     try:
       versionStr = versionFile.readline().strip()
       if len(versionStr) < 3: # M.m
-        Err(logExtra, "Could not read version information from file: '{}'".format(versionPath))
+        Error.DErr(logExtra, "Could not read version information from file: '{}' ({})".format(versionPath, versionStr))
     except:
       log.error("Could not read version information from file: '%s'", versionPath, extra=logExtra)
       raise
