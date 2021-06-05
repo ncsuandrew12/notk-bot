@@ -5,7 +5,6 @@ from datetime import datetime
 # Local
 import TestUtil as tu
 from CommandTest import CommandTest
-from CommandTest import RoleRoll
 from LoggingTest import logger as log
 from TestConfig import testCfg
 
@@ -21,22 +20,14 @@ class CommandNewGameTest(CommandTest):
     preCommandTime = datetime.utcnow()
     self.RunAmongUsCommandNewGame(gameCode)
     self.bt.client.FetchChannels()
-    last10Messages = self.bt.client.FetchMessageHistoryAndFlatten(
-      channel=self.bt.client.channelsByName[testCfg.cAmongUsCodesChannelName],
-      limit=10,
-      after=None,
-      oldestFirst=True)
-    log.debug("allMessages: %s", last10Messages)
-    for message in last10Messages:
-      log.debug("Logging message: %s `@%s` @%s: %s", message, message.author.name, message.created_at, message.content)
-    allMessages = self.bt.client.FetchMessageHistoryAndFlatten(
+    recentMessages = self.bt.client.FetchMessageHistoryAndFlatten(
       channel=self.bt.client.channelsByName[testCfg.cAmongUsCodesChannelName],
       limit=None,
       after=preCommandTime,
       oldestFirst=True)
-    log.debug("allMessages: %s", allMessages)
+    log.debug("recentMessages: %s", recentMessages)
     matchedMessages = []
-    for message in allMessages:
+    for message in recentMessages:
       msgLogDescription = "{} `@{}` @{}: {}".format(message, message.author.name, message.created_at, message.content)
       log.debug("Checking message: %s", msgLogDescription)
       if (message.author.id == self.bt.guildBot.bot.user.id) and (message.created_at >= preCommandTime):

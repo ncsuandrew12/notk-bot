@@ -1,4 +1,5 @@
 # Standard
+import time
 
 # Local
 import GuildBotManager
@@ -7,14 +8,7 @@ from BotInProcessTest import BotInProcessTest
 from BotInProcessTester import BotInProcessTester
 from LoggingTest import logger as log
 from TestConfig import testCfg
-
-# TODO move
-class RoleRoll:
-  def __init__(self, enrolled, notEnrolled):
-    self.enrolled = enrolled
-    # This is *not* a comprehensive list of non-enrolled users. It is an often-empty list of users known to not be
-    # enrolled.
-    self.notEnrolled = notEnrolled
+from TestUtil import RoleRoll
 
 class CommandTest(BotInProcessTest):
 
@@ -39,20 +33,29 @@ class CommandTest(BotInProcessTest):
 
   def RunAmongUsCommandJoin(self, users):
     args = self.PrepAmongUsCommandUserArgs(users)
-    self.bt.loop.run_until_complete(self.bt.loop.create_task(
+    args.insert(0, "au") # TODO au
+    self.RunCommand(self.bt.loop.create_task(
       GuildBotManager.notkBot.Command(testCfg.cCommandJoin, self.bt.guildBot.logExtra, args)))
 
   def RunAmongUsCommandLeave(self, users):
     args = self.PrepAmongUsCommandUserArgs(users)
-    self.bt.loop.run_until_complete(self.bt.loop.create_task(
+    args.insert(0, "au") # TODO au
+    self.RunCommand(self.bt.loop.create_task(
       GuildBotManager.notkBot.Command(testCfg.cCommandLeave, self.bt.guildBot.logExtra, args)))
 
   def RunAmongUsCommandNewGame(self, gameCode):
-    args = []
+    args = [ testCfg.cCommandNewGame ]
     if gameCode:
       args.append(gameCode)
-    self.bt.loop.run_until_complete(self.bt.loop.create_task(
-      GuildBotManager.notkBot.Command(testCfg.cCommandNewGame, self.bt.guildBot.logExtra, args)))
+    # TODO au
+    self.RunCommand(self.bt.loop.create_task(GuildBotManager.notkBot.Command("au", self.bt.guildBot.logExtra, args)))
+
+  def RunCommand(self, task):
+    self.bt.loop.run_until_complete(task)
+    # The command has been received. Give it time to complete execution.
+    # TODO Implement a better method of knowing command execution has completed. Might be easier once we have slash
+    # command functionality
+    time.sleep(1)
 
   def PrepAmongUsCommandUserArgs(self, users):
     args = []

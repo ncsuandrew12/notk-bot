@@ -171,7 +171,7 @@ Type `{cmdPrefix} {cmdNewGame} <room-code>` in any public channel to send a new 
 Tag the `among-us-test` role to ping all Among Us players like so: <@&{amongUsRoleID}>
 I recommend muting the <#{logChannelID}> channel; it is only for logging purposes and will be very noisy.
 You might also want to mute the <#{botChannelID}> channel, but it will give you helpful messages if you make mistakes using these commands.""".format(
-          cmdPrefix=cfg.cCommandBase,
+          cmdPrefix=cfg.cAUCommandBase,
           cmdJoin=testCfg.cCommandJoin,
           cmdLeave=testCfg.cCommandLeave,
           cmdNewGame=testCfg.cCommandNewGame,

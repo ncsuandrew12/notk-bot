@@ -63,20 +63,22 @@ class Config:
 
     self.cBotName = "notk-bot{}".format(self.cUniversalSuffix)
 
-    cCommandRoot = "au" # Must match the @bot.commmand() function name
+    self.cCommandRoot = "re" # Must match the @bot.commmand() function name
+    self.cAUCommandRoot = "au"
 
     self.cAmongUsRoleName = "among-us{}".format(self.cUniversalSuffix)
     self.cAmongUsCodesChannelName = "among-us-codes"
     self.cBotChannelName = self.cBotName
-    self.cCommandBase = "{}{}".format(self.cCommandPrefix, cCommandRoot)
+    self.cCommandBase = "{}{}".format(self.cCommandPrefix, self.cCommandRoot)
+    self.cAUCommandBase = "{} {}".format(self.cCommandBase, self.cAUCommandRoot)
     self.cLogChannelName = "{}-log".format(self.cBotChannelName)
     self.cInstructionalLine = "⚠ {} Instructions ⚠".format(self.cBotName)
 
-    self.cAmongUsJoinRequestMessageText = "{} {}".format(self.cCommandBase, self.cCommandJoin)
-    self.cAmongUsLeaveRequestMessageText = "{} {}".format(self.cCommandBase, self.cCommandLeave)
+    self.cAmongUsJoinRequestMessageText = "{} {}".format(self.cAUCommandBase, self.cCommandJoin)
+    self.cAmongUsLeaveRequestMessageText = "{} {}".format(self.cAUCommandBase, self.cCommandLeave)
     self.cAmongUsSendGameNotificationText = \
       "Type `{} {} <room-code>` in any public channel to send a new game notification.".format(
-        self.cCommandBase,
+        self.cAUCommandBase,
         self.cCommandNewGame)
 
     with open(secretsFile) as file:

@@ -383,53 +383,84 @@ You might also want to mute the {} channel, but it will give you helpful message
     fullCmd = "{} {}{}{}".format(cfg.cCommandBase, cmd, " " if len(args) > 0 else "", " ".join(args));
     log.debug("Processing command: `%s`", fullCmd, extra=logExtra)
 
-    # Parse the arguments as tagged members
+    if cmd == cfg.cCommandJoin:
+      await self.CommandJoin(logExtra, args)
+    elif cmd == cfg.cCommandLeave:
+      await self.CommandLeave(logExtra, args)
+    elif cmd == "au": # TODO au
+      if (len(args) < 1):
+        Error.DErr(logExtra, "Missing sub-command")
+      subCmd = args[0]
+      args.pop(0)
+      await self.AUSubCommand(subCmd, logExtra, args)
+    else:
+      Error.DErr(logExtra, "Invalid command `%s`: `%s`.", cmd, fullCmd)
+
+  async def CommandJoin(self, logExtra, args):
+    if (len(args) < 1):
+      Error.DErr(logExtra, "Missing role reference parameter")
+    roleReference = args[0]
+    args.pop(0)
+    members = await self.ProcessMemberArgs(logExtra, args)
+    log.debug("members=%s", members)
+    if roleReference == "au": # TODO au
+      await self.AddAmongUsPlayer(logExtra, members)
+    else:
+      Error.DErr(logExtra, "Bad role reference %s", roleReference)
+
+  async def CommandLeave(self, logExtra, args):
+    if (len(args) < 1):
+      Error.DErr(logExtra, "Missing role reference parameter")
+    roleReference = args[0]
+    args.pop(0)
+    members = await self.ProcessMemberArgs(logExtra, args)
+    if roleReference == "au": # TODO au
+      await self.RemoveAmongUsPlayer(logExtra, members)
+    else:
+      Error.DErr(logExtra, "Bad role reference %s", roleReference)
+
+  async def ProcessMemberArgs(self, logExtra, args):
     members = []
     memberNames = []
     resolved = []
-    if cmd in [ cfg.cCommandJoin, cfg.cCommandLeave]:
-      if len(args) > 0:
-        userIDs = {}
-        for arg in args:
-          if arg.startswith('<@') & arg.endswith('>'):
-            userID = arg[2:-1]
-            while userID.startswith('!') | userID.startswith('&'):
-              userID = userID[1:len(userID)]
-            userIDs[userID] = arg
-        for userID in userIDs:
-          try:
-            member = await logExtra.discordContext.guild.fetch_member(userID)
-          except Exception as e:
-            log.warning("userID `%s`: %s", userID, str(e), extra=logExtra)
-          except:
-            log.warning("userID `%s`: %s", userID, str(sys.exc_info()[0]), extra=logExtra)
-          else:
-            if member.name not in memberNames:
-              resolved.append(userIDs[userID])
-              members.append(member)
-              memberNames.append(member.name)
-      else:
-        member = await logExtra.discordContext.guild.fetch_member(logExtra.discordContext.author.id)
-        members = [member]
-        memberNames = [member.name]
-      missing = set(args) - set(resolved)
-      if (len(missing) > 0):
-        dlog.Warn(logExtra, "Could not find members: `%s`!", "`, `".join(missing))
+    if len(args) > 0:
+      userIDs = {}
+      for arg in args:
+        if arg.startswith('<@') & arg.endswith('>'):
+          userID = arg[2:-1]
+          while userID.startswith('!') | userID.startswith('&'):
+            userID = userID[1:len(userID)]
+          userIDs[userID] = arg
+      for userID in userIDs:
+        try:
+          member = await logExtra.discordContext.guild.fetch_member(userID)
+        except Exception as e:
+          log.warning("userID `%s`: %s", userID, str(e), extra=logExtra)
+        except:
+          log.warning("userID `%s`: %s", userID, str(sys.exc_info()[0]), extra=logExtra)
+        else:
+          if member.name not in memberNames:
+            resolved.append(userIDs[userID])
+            members.append(member)
+            memberNames.append(member.name)
+    else:
+      member = await logExtra.discordContext.guild.fetch_member(logExtra.discordContext.author.id)
+      members = [member]
+      memberNames = [member.name]
+    missing = set(args) - set(resolved)
+    if (len(missing) > 0):
+      dlog.Warn(logExtra, "Could not find members: `%s`!", "`, `".join(missing))
+    return members
 
-    gameCode = ""
+  async def AUSubCommand(self, cmd, logExtra, args):
+    fullCmd = "{} {}{}{}".format(cfg.cCommandBase, cmd, " " if len(args) > 0 else "", " ".join(args));
+    log.debug("Processing sub-command: `%s`", fullCmd, extra=logExtra)
     if cmd == cfg.cCommandNewGame:
       if len(args) < 1:
         Error.DErr(logExtra, "Missing game code parameter in command `%s`", fullCmd)
-      gameCode = args[0]
-
-    if cmd == cfg.cCommandJoin:
-      await self.AddAmongUsPlayer(logExtra, members)
-    elif cmd == cfg.cCommandLeave:
-      await self.RemoveAmongUsPlayer(logExtra, members)
-    elif cmd == cfg.cCommandNewGame:
-      await self.NotifyAmongUsGame(logExtra, gameCode)
+      await self.NotifyAmongUsGame(logExtra, args[0])
     else:
-      Error.DErr(logExtra, "Invalid command `%s`: `%s`.", cmd, fullCmd)
+      Error.DErr(logExtra, "Invalid sub-command `%s`: `%s`.", cmd, fullCmd)
 
   async def AddAmongUsPlayer(self, logExtra, members):
     alreadyMemberNames = []
@@ -468,7 +499,7 @@ You might also want to mute the {} channel, but it will give you helpful message
             member.name))
         await self.channelBot.send(content="{} is now Among The Hidden.".format(member.mention))
         if not member.bot:
-          await member.send(content="You have been remove from `{}`'s Among Us players.".format(ctx.guild.name))
+          await member.send(content="You have been removed from `{}`'s Among Us players.".format(ctx.guild.name))
       else:
         missingMemberNames.append(member.name)
     if (len(missingMemberNames) > 0):

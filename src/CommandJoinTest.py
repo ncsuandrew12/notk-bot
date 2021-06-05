@@ -5,9 +5,9 @@ from datetime import datetime
 # Local
 import TestUtil as tu
 from CommandTest import CommandTest
-from CommandTest import RoleRoll
 from LoggingTest import logger as log
 from TestConfig import testCfg
+from TestUtil import RoleRoll
 
 class CommandJoinTest(CommandTest):
 

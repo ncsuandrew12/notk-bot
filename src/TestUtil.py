@@ -23,3 +23,10 @@ def GetIDDict(ls):
 
 class Container:
   pass
+
+class RoleRoll:
+  def __init__(self, enrolled, notEnrolled):
+    self.enrolled = enrolled
+    # This is *not* a comprehensive list of non-enrolled users. It is an often-empty list of users known/expected to not
+    # be enrolled.
+    self.notEnrolled = notEnrolled

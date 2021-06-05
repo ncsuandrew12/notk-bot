@@ -143,5 +143,5 @@ class GuildBotManager:
 notkBot = GuildBotManager(asyncio.get_event_loop(), cfg.cToken)
 
 @discordBot.command()
-async def au(ctx, cmd, *args):
+async def re(ctx, cmd, *args):
   await notkBot.Command(cmd, Logging.LogExtra(ctx), args)
