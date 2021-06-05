@@ -7,7 +7,7 @@ set -e
 
 echo "Starting server!"
 
-cd /home/`whoami`/$(jq -r ".productionLocal.dir" ${ROOT_DIR}/bin/config.json)
+cd /home/`whoami`/$(jq -r ".dir" ${ROOT_DIR}/cfg/productionLocal/deploy.json)
 
 python3 main.py
 

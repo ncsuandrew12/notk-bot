@@ -30,7 +30,6 @@ User-comprehensible TODOs:
 -Send a daily/weekly bible verse to a channel
 
 Technical/development TODOs:
--Modify production deployment script to deploy a specific release instead of the current directory.
 -Generalize RoleEnroller
 -Detect when an important role/channel has been deleted and handle robustly
 -Move developer information to config file (andrewf#6219)

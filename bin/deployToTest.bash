@@ -3,4 +3,4 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source "${DIR}/common.bash"
 
-${ROOT_DIR}/bin/deploy.bash test
+${ROOT_DIR}/bin/deploy.bash --target test

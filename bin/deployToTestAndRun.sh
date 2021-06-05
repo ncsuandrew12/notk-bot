@@ -5,5 +5,5 @@ source "${DIR}/common.bash"
 
 set -e
 
-${ROOT_DIR}/bin/deploy.bash test
+${ROOT_DIR}/bin/deployToTest.bash
 ${ROOT_DIR}/bin/startServerTest.bash

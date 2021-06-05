@@ -31,15 +31,6 @@ while (( "$#" )); do
             majorRelease=0
             shift
             ;;
-        # -e|--version)
-        #     if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        #     MY_FLAG_ARG=$2
-        #     shift 2
-        #     else
-        #     >&2 echo "ERROR: Argument for $1 is missing"
-        #     exit $ERR_BAD_ARGUMENT
-        #     fi
-        #     ;;
         -*|--*=) # unsupported flags
             >&2 echo "ERROR: Unsupported parameter $1"
             exit $ERR_BAD_PARAMETER
@@ -49,7 +40,7 @@ while (( "$#" )); do
                 version="$1"
             else
                 >&2 echo "ERROR: Unexpected argument $1"
-                exit $ERR_BAD_ARGUMENT
+                exit ${ERR_BAD_ARGUMENT}
             fi
             $((argCnt+1))
             shift
@@ -59,7 +50,7 @@ done
 
 if [ $majorRelease -eq -1 ]; then
     >&2 echo "ERROR: Major/minor not specified"
-    exit $ERR_MISSING_PARAMETER
+    exit ${ERR_MISSING_PARAMETER}
 fi
 
 if [[ `git status --short | wc -l` -ne 0 ]]; then
@@ -96,7 +87,7 @@ elif [ "$version" == "" ]; then
     fi
 else
     >&2 echo "ERROR: Invalid version string given: \'${version}\'"
-    exit $ERR_BAD_ARGUMENT
+    exit ${ERR_BAD_ARGUMENT}
 fi
 
 if [ $majorRelease -eq 1 ]; then

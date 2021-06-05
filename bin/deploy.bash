@@ -6,29 +6,38 @@ source "${DIR}/common.bash"
 ERR_NOT_READY=10
 
 target=""
+release=""
 
 argCnt=0
 while (( "$#" )); do
     case "$1" in
-        -*|--*=) # unsupported flags
+        -t|--target)
+            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+                target=$2
+                shift 2
+            else
+                >&2 echo "ERROR: Argument for $1 is missing"
+                exit ${ERR_BAD_ARGUMENT}
+            fi
+            ;;
+        -r|--release)
+            if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+                release=$2
+                shift 2
+            else
+                >&2 echo "ERROR: Argument for $1 is missing"
+                exit ${ERR_BAD_ARGUMENT}
+            fi
+            ;;
+        *)
             >&2 echo "ERROR: Unsupported parameter $1"
             exit $ERR_BAD_PARAMETER
-            ;;
-        *) # preserve positional arguments
-            if [ $argCnt -eq 0 ]; then
-                target="$1"
-            else
-                >&2 echo "ERROR: Unexpected argument $1"
-                exit $ERR_BAD_ARGUMENT
-            fi
-            argCnt=$((argCnt+1))
-            shift
             ;;
     esac
 done
 
 production=0
-case "$target" in
+case "${target}" in
     test)
         ;;
     production)
@@ -38,53 +47,76 @@ case "$target" in
         production=1
         ;;
     *)
-        >&2 echo "ERROR: Invalid target: $target"
-        exit $ERR_BAD_ARGUMENT
+        >&2 echo "ERROR: Invalid target: ${target}"
+        exit ${ERR_BAD_ARGUMENT}
         ;;
 esac
 
-deploymentJson=$(jq -r ".${target}" ${ROOT_DIR}/bin/config.json)
-targetDir=/home/`whoami`/$(jq -r ".dir" <<< $deploymentJson)
+sourceDir="${ROOT_DIR}"
+if [ ${production} -eq 1 ]; then
+    if [ -n ${release} ]; then
+        >&2 echo "ERROR: Must specify release when deploying to production."
+        exit ${ERR_MISSING_PARAMETER}
+    fi
+    cd /tmp
+    sourceDir="notk-src-"$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+    git clone git@github.com:ncsuandrew12/notk-bot.git ${sourceDir}
+    sourceDir=/tmp/${sourceDir}
+    cd ${sourceDir}
+    if [ ${release} -eq "latest" ]; then
+        release=`git tag | tail -1` # TODO Will not work starting with release 10.0 or 0.10
+    fi
+    git checkout ${release}
+fi
+
+deploymentJson=$(jq -r "." ${sourceDir}/cfg/${target}/deploy.json)
+targetDir=/home/`whoami`/$(jq -r ".dir" <<< ${deploymentJson})
 
 tag=`git tag --points-at HEAD`
 
 sshfsDeployment=0
-if [ $(jq -r ".deployMethod" <<< $deploymentJson) -eq "sshfs" ]; then
+deployMethod=$(jq -r ".deployMethod" <<< ${deploymentJson})
+if [ -n ${deployMethod} & ${deployMethod} -eq "sshfs" ]; then
     sshfsDeployment=1
 fi
 
-if [[ `echo "$tag" | wc -w` -eq 0 ]]; then
-    if [ $production -eq 1 ]; then
+if [[ `echo "${tag}" | wc -w` -eq 0 ]]; then
+    if [ ${production} -eq 1 ]; then
         >&2 echo "ERROR: The current commit is not tagged."
         exit $ERR_NOT_READY
     else
-        tag=`head -1 ${ROOT_DIR}/VERSION`
+        tag=`head -1 ${sourceDir}/VERSION`
     fi
 fi
 
-if [[ -e $targetDir ]]; then
-    if [ $production -eq 0 ]; then
+if [[ ${production} -eq 1 && ${tag} -ne ${release} ]]; then
+    >&2 echo "ERROR: git label (${tag}) != release target (${release})"
+    exit ${ERR_BAD_ARGUMENT}
+fi
+
+if [[ -e ${targetDir} ]]; then
+    if [ ${production} -eq 0 ]; then
         echo "Deleting log directory if it exists."
-        rm -rf $targetDir/log
+        rm -rf ${targetDir}/log
     fi
 else
-    mkdir -p $targetDir
-    if [ $sshfsDeployment -eq 1 ]; then
-        sshfs -p $(jq -r ".port" <<< $deploymentJson) `whoami`@$(jq -r ".host" <<< $deploymentJson) $targetDir
+    mkdir -p ${targetDir}
+    if [ ${sshfsDeployment} -eq 1 ]; then
+        sshfs -p $(jq -r ".port" <<< ${deploymentJson}) `whoami`@$(jq -r ".host" <<< ${deploymentJson}) ${targetDir}
     fi
 fi
 
-echo "Deploying to $target."
+echo "Deploying to ${target}."
 
-cp -vf ${ROOT_DIR}/releases/${tag}/RELEASE_NOTES ${targetDir}/
+cp -vf ${sourceDir}/releases/${tag}/RELEASE_NOTES ${targetDir}/
 echo ${tag} > ${targetDir}/VERSION
 
-cp -vf ${ROOT_DIR}/src/*.py ${targetDir}/
+cp -vf ${sourceDir}/src/*.py ${targetDir}/
 
 mkdir -p ${targetDir}/cfg/
-cp -rvf ${ROOT_DIR}/cfg/$target/* ${targetDir}/cfg/
-if [ $sshfsDeployment -eq 1 ]; then
-    cp -vf ${ROOT_DIR}/cfg/$target/requirements.txt ${targetDir}/
+cp -rvf ${sourceDir}/cfg/${target}/* ${targetDir}/cfg/
+if [ ${sshfsDeployment} -eq 1 ]; then
+    cp -vf ${sourceDir}/cfg/${target}/requirements.txt ${targetDir}/
 fi
 
-echo "Deployed to $target!"
+echo "Deployed to ${target}!"

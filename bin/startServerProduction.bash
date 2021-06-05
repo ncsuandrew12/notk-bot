@@ -5,8 +5,8 @@ source ${DIR}/common.bash
 
 set -e
 
-serverID=$(jq -r '.production.serverID' ${ROOT_DIR}/bin/config.json)
-secretFile=$(jq -r '.production.secretFile' ${ROOT_DIR}/bin/config.json)
+serverID=$(jq -r '.serverID' ${ROOT_DIR}/cfg/production/deploy.json)
+secretFile=$(jq -r '.secretFile' ${ROOT_DIR}/cfg/production/deploy.json)
 
 token=$(jq -r '.token' ${ROOT_DIR}/bin/$secretFile)
 
