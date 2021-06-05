@@ -120,16 +120,17 @@ if [ $dryRun -eq 0 ]; then
     echo "Copying release notes."
     cp RELEASE_NOTES releases/${tagLabel}/RELEASE_NOTES
 
-    # echo "EXTERNAL CHANGES" > RELEASE_NOTES
-    # echo "" >> RELEASE_NOTES
-    # echo "INTERNAL CHANGES" >> RELEASE_NOTES
-    # echo "" >> RELEASE_NOTES
+    echo "EXTERNAL CHANGES" > RELEASE_NOTES
+    echo "" >> RELEASE_NOTES
+    echo "INTERNAL CHANGES" >> RELEASE_NOTES
+    echo "" >> RELEASE_NOTES
 
     echo "Documenting version."
     echo ${tagLabel} > VERSION
 
     echo "Committing changes."
     git add releases/${tagLabel}
+    git add RELEASE_NOTES
     git commit -m "Prepping release: $tagLabel"
     if [ $majorRelease -eq 1 ]; then
         git push --set-upstream origin release/${major}
