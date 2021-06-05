@@ -125,9 +125,6 @@ if [ $dryRun -eq 0 ]; then
     echo "INTERNAL CHANGES" >> RELEASE_NOTES
     echo "" >> RELEASE_NOTES
 
-    echo "Documenting version."
-    echo ${tagLabel} > VERSION
-
     echo "Committing changes."
     git add releases/${tagLabel}
     git add RELEASE_NOTES

@@ -85,7 +85,11 @@ if [[ `echo "${tag}" | wc -w` -eq 0 ]]; then
         >&2 echo "ERROR: The current commit is not tagged."
         exit $ERR_NOT_READY
     else
-        tag=`head -1 ${sourceDir}/VERSION`
+        pastHead=0
+        while [[ `echo "${tag}" | wc -w` -eq 0 || ! ${tag} =~ ^[0-9]+\.[0-9]+$ ]]; do
+            pastHead=$((pastHead+1))
+            tag=`git tag --points-at HEAD~${pastHead}`
+        done
     fi
 fi
 
