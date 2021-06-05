@@ -8,6 +8,8 @@ import Error
 
 class Config:
   def __init__(self, configFilename):
+    self.cUserBotDeveloper = None
+    self.cUserBotDeveloperID = None
     self.cCommandJoin = "join"
     self.cCommandLeave = "leave"
     self.cCommandNewGame = "newgame"
@@ -37,6 +39,10 @@ class Config:
         secretsFile = "cfg/" + config[cfgKey]
       elif cfgKey == "commandPrefix":
         self.cCommandPrefix=config[cfgKey]
+      elif cfgKey == "developer":
+        for developerKey in config[cfgKey]:
+          if developerKey == "discordUserID":
+            self.cUserBotDeveloperID = config[cfgKey][developerKey]
       elif cfgKey == "database":
         databaseCfg = config[cfgKey]
         for dbKey in databaseCfg:

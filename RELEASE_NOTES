@@ -1,5 +1,6 @@
 EXTERNAL CHANGES
-
+-The bot developer is now @mentioned in some catastrophic error messages.
 
 INTERNAL CHANGES
 -Modularized the guild setup function
+-Moved developer information from source code to config file.

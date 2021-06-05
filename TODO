@@ -23,7 +23,6 @@ User-comprehensible TODOs:
 -When the bot restarts, check the bot's nickname and update channel topics/descriptions accordingly.
 -Automatically delete new game messages after some set amount of time (~12? hours)?
 -Mention channels in more of the log messages (instead of simply naming them)
--(one-off) Send pizza to notk's #general
 -Point new users to the rules
 -Request pizza from new members.
 -Update the Discord status of the bot to show how many servers it is serving.
@@ -32,7 +31,6 @@ User-comprehensible TODOs:
 Technical/development TODOs:
 -Generalize RoleEnroller
 -Detect when an important role/channel has been deleted and handle robustly
--Move developer information to config file (andrewf#6219)
 -During build process, run a python script to parse the test/production config files, remove any default values, and overwrite the initial config file with the result. Also produce a variant with all non-specified config options set to their default values as a form of documentation.
 -Create wrapper around client/bot with additional utility/convenience functions
 -Solve never-retrieved task exceptions

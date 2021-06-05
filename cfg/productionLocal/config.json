@@ -1,4 +1,7 @@
 {
+  "developer": {
+    "discordUserID": 357974466854387712
+  },
   "secretFile": "secrets.json",
   "target": "productionLocal"
 }

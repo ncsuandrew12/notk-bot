@@ -1,9 +1,12 @@
 {
-  "universalSuffix": "-test",
-  "secretFile": "secrets.json",
   "database": {
     "nameSuffix": "Test"
   },
+  "developer": {
+    "discordUserID": 357974466854387712
+  },
+  "secretFile": "secrets.json",
   "target": "test",
-  "test": true
+  "test": true,
+  "universalSuffix": "-test"
 }

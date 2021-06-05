@@ -18,7 +18,7 @@ from Exceptions import NotkException
 from GuildBot import GuildBot
 from Logging import logger as log
 
-# Needed to be able to list members (for mapping member name arguments to actual members)
+# Needed to be able to list members
 kIntents = discord.Intents.default()
 kIntents.members = True
 
@@ -41,6 +41,7 @@ class GuildBotManager:
     try:
       self.Start()
       self.WaitUntilReady()
+      cfg.cUserBotDeveloper = asyncio.get_event_loop().run_until_complete(discordBot.fetch_user(cfg.cUserBotDeveloperID))
       self.StartGuildBots()
       self.SetupGuildBots()
     except Exception as e:
@@ -129,7 +130,7 @@ class GuildBotManager:
           logExtra.discordContext,
           "`%s` has not been setup yet. This shouldn't be possible. Please contact the bot developer (%s)",
           logExtra.discordContext.guild.name,
-          "andrewf#6219")
+          cfg.cUserBotDeveloper.mention)
 
       guildBot = self.guildBots[logExtra.discordContext.guild.id]
       await self.loop.create_task(guildBot.Command(cmd, logExtra, args))
